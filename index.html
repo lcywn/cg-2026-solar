@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>내 첫 WebGL</title>
+  <style>
+    body { margin: 0; background: #111; }
+    canvas { display: block; width: 100vw; height: 100vh; }
+  </style>
+</head>
+<body>
+  <canvas id="glcanvas"></canvas>
+  <script>
+    const canvas = document.getElementById('glcanvas');
+    const gl = canvas.getContext('webgl2');
+
+    if (!gl) {
+      document.body.innerHTML = '<h1 style="color:white">WebGL2를 사용할 수 없습니다</h1>';
+    } else {
+      console.log('WebGL2 준비 완료:', gl.getParameter(gl.VERSION));
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width  = Math.floor(canvas.clientWidth  * dpr);
+      canvas.height = Math.floor(canvas.clientHeight * dpr);
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.clearColor(0.09, 0.35, 0.55, 1.0);   // 이 색을 바꿔 보세요
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    }
+  </script>
+</body>
+</html>
