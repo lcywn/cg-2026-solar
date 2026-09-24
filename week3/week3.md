@@ -22,7 +22,11 @@ M4.rotate z는 Rz값입니다. Rz는 다음과 같습니다.
 const model = M4.multiply(M4.rotateY(time * 0.8), M4.translate(0, 1.9, 0));
 ```
 
-그래서 앞뒤 움직임을 좌우하는 M4.translate의 z값에 임의의 값 2를 넣었습니다.
+그래서 앞뒤 움직임을 좌우하는 M4.translate의 z값에 임의의 값 2를 넣었습니다. 수정 후 코드는 다음과 같습니다.
+
+```html
+const model = M4.multiply(M4.rotateY(time * 0.8), M4.translate(0, 1.9, 2));
+```
 
 
 rotate와 translate의 자리를 바꾸면 자전하던 행성이 공전을 합니다. 코드는 오른쪽부터 작동합니다. 
@@ -41,5 +45,10 @@ rotate와 translate의 자리를 바꾸면 자전하던 행성이 공전을 합�
 ![Task 1 결과](images/week3_task1_step6_2.png)
 
 이것은 공전하는 구의 모습입니다.
+
+
+### 8단계
+![Task 1 결과](images/week3_task1_step8.png)
+계단식 음영 셰이더를 넣어 최종 완성된 모습입니다.
 
 
