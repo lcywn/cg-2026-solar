@@ -56,7 +56,7 @@ const deg = d => d * Math.PI / 180;
 /* 지구 — 실습 도구에서 놓은 순서 그대로입니다 */
 function earthMatrix(t) {
   let M = M4.identity(M4.create());
-  M = M4.scale(M, M, [1 / 3, 1 / 3, 1 / 3]);   // 크기(균등) 1/3배
+  M = M4.scale(M, M, [1, 1, 1]);   // 크기(균등) 1배
   M = M4.rotateX(M, M, deg(23.5));   // 회전 Rx(23.5도)
   M = M4.rotateZ(M, M, deg((365 * 360 * t) / 20));   // 회전 Rz((365*360*t)/20도)
   return M;
@@ -66,10 +66,10 @@ function earthMatrix(t) {
 function moonMatrix(t) {
   let M = M4.identity(M4.create());
   M = M4.rotateZ(M, M, deg((360 / 20) * t));   // 회전 Rz((360/20)*t도)
-  M = M4.translate(M, M, [0.776 + 0.1, 0, 0]);   // 이동 T(0.776+0.1, 0, 0)
+  M = M4.translate(M, M, [60.3, 0, 0]);   // 이동 T(60.3, 0, 0)
   M = M4.rotateX(M, M, deg(6.7));   // 회전 Rx(6.7도)
   M = M4.rotateZ(M, M, deg(180));   // 회전 Rz(180도)
-  M = M4.scale(M, M, [0.273 / 3, 0.273 / 3, 0.273 / 3]);   // 크기(균등) 0.273/3배
+  M = M4.scale(M, M, [0.273, 0.273, 0.273]);   // 크기(균등) 0.273배
   return M;
 }
 
@@ -78,14 +78,14 @@ function satelliteMatrix(t) {
   let M = M4.identity(M4.create());
   M = M4.rotateX(M, M, deg(69.9987));   // 회전 Rx(69.9987도)
   M = M4.rotateZ(M, M, deg((27.3 * 14.983304 * 360 * t) / 20));   // 회전 Rz((27.3*14.983304*360*t)/20도)
-  M = M4.translate(M, M, [0.104 + 0.25, 0, 0]);   // 이동 T(0.104+0.25, 0, 0)
-  M = M4.scale(M, M, [(9 / 6371000) / 3 * 15000, (9 / 6371000) / 3 * 15000, (9 / 6371000) / 3 * 15000]);   // 크기(균등) (9/6371000)/3*15000배
+  M = M4.translate(M, M, [6950.19 / 6371, 0, 0]);   // 이동 T(6950.19/6371, 0, 0)
+  M = M4.scale(M, M, [9 / 6371000, 9 / 6371000, 9 / 6371000]);   // 크기(균등) 9/6371000배
   return M;
 }
 
 
 /* 축의 표시 범위 — 실습 도구의 「축 범위」 값입니다. */
-const RANGE = { x: 1, y: 1, z: 1 };
+const RANGE = { x: 70, y: 70, z: 70 };
 
 /* 물체 목록 — 색과 모양, 그리고 위에서 정의한 변환 함수를 묶습니다. */
 const OBJECTS = [
@@ -95,7 +95,7 @@ const OBJECTS = [
 ];
 
 /* 시간이 흐르는 속도와 되돌아가는 지점 (실습 도구와 같은 규칙) */
-const T_SPEED = 3;
+const T_SPEED = 0.25;
 const T_MAX = 20;
 
 /* ══════════════════════════════════════════════════════════════════════════
