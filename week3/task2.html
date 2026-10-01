@@ -603,13 +603,13 @@ function render() {
   const aspect = canvas.width / canvas.height;
 
   // ── 카메라 ─────────────────────────────────────────────────────
+  // ── 카메라 ─────────────────────────────────────────────────────
   let camera = M4.identity();
 
-  // ① 뒤로 물러난 만큼 세계를 앞으로 밀어낸다
-  camera = M4.multiply(M4.translate(0, 0, -8), camera);
+  // ① 두 행성이 모두 화면에 들어오도록 카메라를 뒤로 더 뺍니다 (-8 → -12)
+  camera = M4.multiply(M4.translate(0, 0, -12), camera);
 
   // ② 원근 — 마지막 행을 건드리면 먼 것이 작아집니다 (2주차 8절)
-  //    아래 -1/8 자리가 z 를 w 로 흘려보내는 자리입니다
   const perspective = new Float32Array([
     1, 0, 0,      0,
     0, 1, 0,      0,
@@ -623,20 +623,27 @@ function render() {
 
   const viewProj = camera;
 
-
   gl.useProgram(program);                    // ← uniform 을 넣기 전에 반드시 먼저!
   gl.uniform1f(uTimeLoc, time);
   gl.uniformMatrix4fv(uViewProjLoc, false, viewProj);
 
-  // 행성 하나만 원점에서 자전시킨다.
-  const model = M4.multiply(M4.rotateX(0.32), M4.rotateY(time * 0.24));
+  // ── 두 행성 렌더링 ─────────────────────────────────────────────
+  // 1. 공통 회전 행렬: 두 행성의 물리적 자전 움직임과 크기를 완전히 동일하게 설정
+  const rotation = M4.multiply(M4.rotateX(0.32), M4.rotateY(time * 0.24));
 
-  gl.uniformMatrix4fv(uModelLoc, false, model);
   gl.bindVertexArray(planet.vao);
+
+  // 2. 왼쪽 행성: X축으로 -1.6만큼 이동
+  const modelLeft = M4.multiply(M4.translate(-1.6, 0.0, 0.0), rotation);
+  gl.uniformMatrix4fv(uModelLoc, false, modelLeft);
+  gl.drawElements(gl.TRIANGLES, planet.count, gl.UNSIGNED_SHORT, 0);
+
+  // 3. 오른쪽 행성: X축으로 +1.6만큼 이동
+  const modelRight = M4.multiply(M4.translate(1.6, 0.0, 0.0), rotation);
+  gl.uniformMatrix4fv(uModelLoc, false, modelRight);
   gl.drawElements(gl.TRIANGLES, planet.count, gl.UNSIGNED_SHORT, 0);
 
   gl.bindVertexArray(null);
-
 
   requestAnimationFrame(render);
 }
