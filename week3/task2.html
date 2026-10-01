@@ -402,6 +402,201 @@ void main() {
 `;
 
 
+const FS_SOURCE2 = `#version 300 es
+precision highp float;
+
+in vec3 vColor;
+in vec3 vNormal;      // 세계 기준 법선 — 빛 계산에 쓴다
+in vec3 vSurf;        // 물체 기준 법선 — 무늬가 표면에 붙어 돌게 한다
+
+uniform float uTime;
+uniform float uPlanet;
+
+out vec4 fragColor;
+
+/* ── 잡음 만들기 ───────────────────────────────────────────────
+   이미지 파일 없이 무늬를 만들려면 "규칙적이지 않아 보이는 숫자"가 필요합니다.
+   아래는 좌표를 넣으면 언제나 같은 0~1 값을 돌려주는 가짜 난수입니다.        */
+float hash31(vec3 p) {
+  p = fract(p * 0.3183099 + vec3(0.71, 0.113, 0.419));
+  p *= 17.0;
+  return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+}
+
+
+// 격자 꼭짓점의 난수를 부드럽게 섞어 "덩어리진" 잡음을 만듭니다
+float noise3(vec3 x) {
+  vec3 i = floor(x), f = fract(x);
+  f = f * f * (3.0 - 2.0 * f);                 // 부드럽게 (smoothstep 과 같은 곡선)
+  return mix(mix(mix(hash31(i + vec3(0,0,0)), hash31(i + vec3(1,0,0)), f.x),
+                 mix(hash31(i + vec3(0,1,0)), hash31(i + vec3(1,1,0)), f.x), f.y),
+             mix(mix(hash31(i + vec3(0,0,1)), hash31(i + vec3(1,0,1)), f.x),
+                 mix(hash31(i + vec3(0,1,1)), hash31(i + vec3(1,1,1)), f.x), f.y), f.z);
+}
+
+// 크기가 다른 잡음을 여러 겹 더합니다 → 큰 덩어리와 잔 무늬가 함께 생깁니다
+float fbm(vec3 p) {
+  float v = 0.0, a = 0.5;
+  for (int i = 0; i < 5; i++) { v += a * noise3(p); p *= 2.02; a *= 0.5; }
+  return v;
+}
+
+/* 분화구 — 공간을 격자로 나누고 칸마다 분화구를 하나씩 둔다.
+   이웃 칸까지 봐야 경계에 걸친 분화구가 잘리지 않는다. */
+float craters(vec3 p, float scale) {
+  p *= scale;
+  vec3 cell = floor(p);
+  float depth = 0.0;
+  for (int x = -1; x <= 1; x++)
+  for (int y = -1; y <= 1; y++)
+  for (int z = -1; z <= 1; z++) {
+    vec3 c = cell + vec3(x, y, z);
+    vec3 center = c + vec3(hash31(c), hash31(c + 5.7), hash31(c + 13.1));
+    float r = 0.16 + 0.26 * hash31(c + 29.3);
+    vec3 v = p - center;
+
+    // 분화구 표면에 접하는 2D 좌표축을 만들어 별 모양 방향을 계산한다.
+    vec3 n = normalize(center);
+    vec3 up = abs(n.y) > 0.99
+      ? vec3(1.0, 0.0, 0.0)
+      : vec3(0.0, 1.0, 0.0);
+    vec3 t = normalize(cross(n, up));
+    vec3 b = cross(n, t);
+    float angle = atan(dot(v, b), dot(v, t));
+
+    // 5개의 꼭짓점을 가진 별 모양으로 반지름을 변형한다.
+    float starShape = 1.0 - 0.4 * cos(5.0 * angle);
+    float d = length(v) * starShape;
+
+    depth -= smoothstep(r, r * 0.30, d) * 0.9;
+    depth += smoothstep(r * 1.22, r, d)
+      * smoothstep(r * 0.80, r, d) * 0.5;
+  }
+  return depth;
+}
+
+void main() {
+  vec3 N = normalize(vNormal);
+  vec3 S = normalize(vSurf);
+  vec3 L = normalize(vec3(0.9, 0.25, 0.35));
+
+  /* ① 별 모양 분화구. 현재는 표면을 유지하기 위해 효과를 끈 상태다. */
+  float c = craters(S, 2.2);
+
+  /* ② 바탕에 잔 잡음을 더해 표면을 거칠게. */
+  float rough = fbm(S * 14.0) - 0.5;
+  float height = c * 0.5 + rough * 0.25;
+
+  /* ③ 높이 변화로 법선을 흔들어 울퉁불퉁해 보이게 한다.
+        제대로 하려면 미분이 필요하지만, 여기서는 화면 기울기로 근사한다. */
+  vec3 bumped = normalize(N + vec3(dFdx(height), dFdy(height), 0.0) * 14.0);
+  float diff = max(dot(bumped, L), 0.0);
+  float h = fbm(S * 2.6);
+
+  /* ④ 바다(마리아) — 넓고 어두운 평원. 
+  float mare = smoothstep(0.46, 0.56, fbm(S * 1.7));
+  vec3 planetAlbedo = mix(vec3(0.62, 0.30, 0.40), vec3(1.0, 0.68, 0.76), mare);
+  vec3 albedo = mix(vColor, planetAlbedo, uPlanet);
+  albedo *= mix(1.0, clamp(1.0 + height * 0.5, 0.55, 1.25), uPlanet); */
+
+  /* ④ 입체적인 마블링 띠 (스무디) — 회전하며 섞이는 액체 흐름 구현 */
+  
+  float spiral = S.y * 5.0 + (S.x + S.z) * 1.5;
+  
+  // 2. 다중 노이즈 왜곡: 큰 흐름과 자잘한 흐름 두 가지 노이즈를 만듭니다.
+  float warp1 = fbm(S * 3.0) * 3.0;
+  float warp2 = fbm(S * 6.0 + 15.0) * 2.0; 
+  
+  // 3. 파동(띠) 겹치기: 두꺼운 메인 띠(wave)와 
+  // 그 사이사이에 반대 방향으로 섞이는 얇은 띠(subWave)를 더해 디테일을 높입니다.
+  float wave = sin(spiral + warp1);
+  float subWave = sin(spiral * 2.2 - warp2) * 0.5; 
+  
+  // 4. 두 파동을 합쳐 부드럽게 블렌딩합니다. 
+  // wave + subWave의 결과값에 따라 색이 나뉩니다.
+  float smoothieBlend = smoothstep(-0.4, 0.6, wave + subWave);
+  
+  // 5. 색상 혼합
+  vec3 colorA = vec3(0.95, 0.35, 0.55); // 진한색
+  vec3 colorB = vec3(1.00, 0.85, 0.88); // 연한
+  vec3 planetAlbedo = mix(colorA, colorB, smoothieBlend);
+  
+  vec3 albedo = mix(vColor, planetAlbedo, uPlanet);
+  
+  // 거친 돌출감을 줄여 부드러운 액체 표면처럼 보이게 명암을 억제합니다.
+  albedo *= mix(1.0, clamp(1.0 + height * 0.15, 0.85, 1.15), uPlanet);
+
+  /* ④ 대각선 파스텔 보라색 swirling 띠 — 8시에서 1시 방향으로 기울인다. */
+  float longitude = atan(S.z, S.x);
+  float diagonalBand = 0.72 * S.y + 0.55 * S.x;
+  float bandPath = 0.045 * sin(longitude * 3.0 + fbm(S * 5.0) * 2.5);
+  float bandDistance = abs(diagonalBand - bandPath);
+  float purpleBand = 1.0 - smoothstep(0.012, 0.035, bandDistance);
+  purpleBand *= uPlanet;
+  albedo = mix(albedo, vec3(0.68, 0.46, 0.86), purpleBand * 0.50);
+  
+  /* ④ 프라푸치노 드리즐 띠 — 시간에 따라 돌게함 */
+  vec3 drift = vec3(cos(uTime * 0.06), 0.0, sin(uTime * 0.06));
+  
+  // x, z축 배율은 줄이고, y축 배율은 높여서(예: 1.5, 6.0, 1.5) 가로로 긴 형태
+  vec3 stretch = vec3(1.5, 4.0, 1.5); 
+  float cloud = smoothstep(0.40, 0.72, fbm(S * stretch + drift * 1.6));
+  
+  // 파란색 구름의 색상값 적용
+  vec3 unicorn = vec3(0.0, 0.65, 0.95); 
+  albedo = mix(albedo, unicorn, cloud * 0.75);
+
+
+ /* 5 휘핑크림과 비슷하게 생긴 극관이 행성 윗부분에만 존재하도록 */
+  float lat = asin(clamp(S.y, -1.0, 1.0));
+  float cream = smoothstep(0.90, 1.20, lat); //(경계선높이, 완전히 흰색되는 높이)
+  albedo = mix(albedo, vec3(0.93, 0.96, 0.98), cream);
+
+  vec3 color = albedo * (0.06 + 0.94 * diff);
+
+   /* ⑥ 대기 — 가장자리(법선이 눕는 곳)일수록 푸르게 밝아진다. */
+  float rim = pow(1.0 - abs(dot(N, normalize(vec3(0.0, 0.1, 1.0)))), 3.0);
+  color += vec3(0.25, 0.45, 0.90) * rim * diff * 0.9;
+
+  
+/* ⑤ 큰 폭풍 하나 — 정해진 방향에서 가까울수록 붉게. */
+  vec3  eye   = normalize(vec3(0.35, -0.26, 0.90));
+  float storm = smoothstep(0.34, 0.05, distance(S, eye));
+  albedo = mix(albedo, vec3(0.82, 0.34, 0.24), storm * 0.85);
+
+  /* ⑥ 폭풍 안쪽이 소용돌이치는 느낌 — 중심을 도는 각도로 결을 넣는다. */
+  float ang = atan(S.y - eye.y, S.x - eye.x);
+  albedo *= 1.0 + 0.12 * storm * sin(ang * 6.0 + uTime * 0.6);
+
+
+/* ⑤ 밝은 면의 스프링클 — 빛이 닿는 곳에서만 파랑, 보라, 핑크로 빛난다. */
+  float day = smoothstep(0.25, 0.70, diff);
+  float city  = smoothstep(0.70, 0.86, fbm(S * 9.0)) * step(0.50, h);
+  
+  // 1. 위치(S)를 바탕으로 0.0 ~ 1.0 사이의 불규칙한 노이즈 값을 만듭니다.
+  // 숫자(15.0)를 키우면 색상이 더 촘촘하게 변하고, 줄이면 넓은 구역 단위로 색이 바뀝니다.
+  float colorNoise = fbm(S * 15.0); 
+  
+  // 2. 파란색과 핑크색을 정의합니다.
+  vec3 blueLight = vec3(0.0, 1.0, 1.0); //파랑  (R,G,B)
+  vec3 pinkLight = vec3(1.0, 0.0, 0.8); //핑크
+  
+  // 3. 노이즈 값에 따라 두 색을 부드럽게 섞습니다. 
+  // 0.0에 가까우면 파랑, 1.0에 가까우면 핑크, 0.5 근처면 섞여서 보라색이 됩니다.
+  vec3 cityColor = mix(blueLight, pinkLight, colorNoise);
+  
+  // 4. 단일 노란색 대신 계산된 다채로운 색상(cityColor)을 곱해줍니다.
+  // 2.2는 불빛의 밝기(강도)이므로 더 밝게 하려면 3.0 이상으로 높이시면 됩니다.
+  vec3 glow = cityColor * day * city * (1.0 - cloud) * 4.0;
+
+  
+
+  fragColor = vec4(color + glow, 1.0);
+}
+`;
+
+
+
 /* ══════════════════════════════════════════════════════════════════════════
    4. WebGL 준비
    ══════════════════════════════════════════════════════════════════════════ */
@@ -444,6 +639,13 @@ const program = createProgram(VS_SOURCE, FS_SOURCE);
 const uTimeLoc = gl.getUniformLocation(program, 'uTime');
 const uModelLoc = gl.getUniformLocation(program, 'uModel');
 const uViewProjLoc = gl.getUniformLocation(program, 'uViewProj');
+
+// ▼▼▼ 2. 왼쪽 행성용 프로그램과 변수 위치▼▼▼
+const program2 = createProgram(VS_SOURCE, FS_SOURCE2);
+const uTimeLoc2 = gl.getUniformLocation(program2, 'uTime');
+const uModelLoc2 = gl.getUniformLocation(program2, 'uModel');
+const uViewProjLoc2 = gl.getUniformLocation(program2, 'uViewProj');
+
 
 // ── 4×4 행렬 도구 ─────────────────────────────────────────────────
 // WebGL 은 행렬을 "열 우선(column-major)" 으로 받습니다.
@@ -605,7 +807,7 @@ function render() {
   // ── 카메라 ─────────────────────────────────────────────────────
   let camera = M4.identity();
 
-  // ① 두 행성이 모두 화면에 들어오도록 카메라를 뒤로 더 뺍니다 (-8 → -12)
+  // ① 두 행성이 모두 화면에 들어오도록 카메라를 뒤로 이동 (-8 -> -12)
   camera = M4.multiply(M4.translate(0, 0, -12), camera);
 
   // ② 원근 — 마지막 행을 건드리면 먼 것이 작아집니다 (2주차 8절)
@@ -622,23 +824,24 @@ function render() {
 
   const viewProj = camera;
 
-  gl.useProgram(program);                    // ← uniform 을 넣기 전에 반드시 먼저!
-  gl.uniform1f(uTimeLoc, time);
-  gl.uniformMatrix4fv(uViewProjLoc, false, viewProj);
-
-  // ── 두 행성 렌더링 ─────────────────────────────────────────────
-  // 1. 공통 회전 행렬: 두 행성의 물리적 자전 움직임과 크기를 완전히 동일하게 설정
+  // ▼▼▼ 3. 셰이더를 교체하며 두 번 그리기 ▼▼▼
   const rotation = M4.multiply(M4.rotateX(0.32), M4.rotateY(time * 0.24));
+  const modelLeft = M4.multiply(M4.translate(-1.6, 0.0, 0.0), rotation);
+  const modelRight = M4.multiply(M4.translate(1.6, 0.0, 0.0), rotation);
 
   gl.bindVertexArray(planet.vao);
 
-  // 2. 왼쪽 행성: X축으로 -1.6만큼 이동
-  const modelLeft = M4.multiply(M4.translate(-1.6, 0.0, 0.0), rotation);
-  gl.uniformMatrix4fv(uModelLoc, false, modelLeft);
+  // --- 왼쪽 행성 (새로 만든 program2 사용) ---
+  gl.useProgram(program2); 
+  gl.uniform1f(uTimeLoc2, time);
+  gl.uniformMatrix4fv(uViewProjLoc2, false, viewProj);
+  gl.uniformMatrix4fv(uModelLoc2, false, modelLeft);
   gl.drawElements(gl.TRIANGLES, planet.count, gl.UNSIGNED_SHORT, 0);
 
-  // 3. 오른쪽 행성: X축으로 +1.6만큼 이동
-  const modelRight = M4.multiply(M4.translate(1.6, 0.0, 0.0), rotation);
+  // --- 오른쪽 행성 (기존 program 사용) ---
+  gl.useProgram(program); 
+  gl.uniform1f(uTimeLoc, time);
+  gl.uniformMatrix4fv(uViewProjLoc, false, viewProj);
   gl.uniformMatrix4fv(uModelLoc, false, modelRight);
   gl.drawElements(gl.TRIANGLES, planet.count, gl.UNSIGNED_SHORT, 0);
 
