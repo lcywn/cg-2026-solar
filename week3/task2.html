@@ -646,6 +646,8 @@ const uTimeLoc2 = gl.getUniformLocation(program2, 'uTime');
 const uModelLoc2 = gl.getUniformLocation(program2, 'uModel');
 const uViewProjLoc2 = gl.getUniformLocation(program2, 'uViewProj');
 
+const uPlanetLoc2 = gl.getUniformLocation(program2, 'uPlanet');
+
 
 // ── 4×4 행렬 도구 ─────────────────────────────────────────────────
 // WebGL 은 행렬을 "열 우선(column-major)" 으로 받습니다.
@@ -833,6 +835,9 @@ function render() {
 
   // --- 왼쪽 행성 (새로 만든 program2 사용) ---
   gl.useProgram(program2); 
+
+  gl.uniform1f(uPlanetLoc2, 1.0);
+  
   gl.uniform1f(uTimeLoc2, time);
   gl.uniformMatrix4fv(uViewProjLoc2, false, viewProj);
   gl.uniformMatrix4fv(uModelLoc2, false, modelLeft);
