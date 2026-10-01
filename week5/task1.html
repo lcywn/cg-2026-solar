@@ -132,11 +132,11 @@ void main() {
 
   //point
   //uLightPos(광원행성)에서 빛이 쏟아져나오는 느낌 행성 움직임에 따라서 ..
-  //vec3 L = normalize(uLightPos - vWorldPos);      // 광원 쪽 방향
+  vec3 L = normalize(uLightPos - vWorldPos);      // 광원 쪽 방향
 
   // directional — 방향 하나로 고정
   //먼 곳에서 일정히 쏟아지는 빛? 광원 위치와 무관하게 장면 전체에 영향을 줌
-  vec3 L = normalize(vec3(0.4, 0.8, 0.5)); 
+  //vec3 L = normalize(vec3(0.4, 0.8, 0.5)); 
 
   vec3 V = normalize(uViewPos  - vWorldPos);      // 눈 쪽 방향
 
@@ -179,6 +179,15 @@ void main() {
  //------------------4단계: 거리 감쇠를 넣음
   float d   = length(uLightPos - vWorldPos);
   float att = 1.0 / (1.0 + 0.02 * d * d);
+  fragColor = vec4(ambient + (diffuse + specular) * att, 1.0);
+
+
+  //------------------6단계: 스포트라이트 제작 
+  vec3 spotDir = vec3(0.0, -1.0, 0.0); // 빛이 향하는 방향을 아래로 고정
+  float c = dot(-L, spotDir);          // 원뿔 축과 이루는 각의 cos
+  // 15도(안쪽)와 22.5도(바깥쪽) 사이에서 감쇠 비율 계산
+  att *= clamp((c - cos(radians(22.5))) / (cos(radians(15.0)) - cos(radians(22.5))), 0.0, 1.0);
+
   fragColor = vec4(ambient + (diffuse + specular) * att, 1.0);
 
 }
