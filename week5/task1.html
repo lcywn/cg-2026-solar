@@ -182,7 +182,7 @@ void main() {
   fragColor = vec4(ambient + (diffuse + specular) * att, 1.0);
 
 
-  //------------------6단계: 스포트라이트 제작 
+  //-------------------6단계: 스포트라이트 제작 
   vec3 spotDir = vec3(0.0, -1.0, 0.0); // 빛이 향하는 방향을 아래로 고정
   float c = dot(-L, spotDir);          // 원뿔 축과 이루는 각의 cos
   // 15도(안쪽)와 22.5도(바깥쪽) 사이에서 감쇠 비율 계산
