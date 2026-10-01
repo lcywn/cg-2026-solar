@@ -91,7 +91,12 @@ void main() {
   vWorldPos  = world.xyz;
 
   // ★ 단계 5 — 아래 한 줄을  vNormal = uNormalMat * aNormal;  로 바꾼다
-  vNormal = mat3(uModel) * aNormal;
+//----------------------------------5단계: 법선 행렬로 바꿉니다 
+  //바꾸기전 
+ //vNormal = mat3(uModel) * aNormal; 
+
+ vNormal = uNormalMat * aNormal; 
+ //바꾼후 
 
   gl_Position = uProj * uView * world;
 }
@@ -122,8 +127,22 @@ void main() {
   }
 
   vec3 N = normalize(vNormal);                    // 표면이 향하는 방향
-  vec3 L = normalize(uLightPos - vWorldPos);      // 광원 쪽 방향
+
+  // -------------------------------6단계: 광원의 종류 변경
+
+  //point
+  //uLightPos(광원행성)에서 빛이 쏟아져나오는 느낌 행성 움직임에 따라서 ..
+  //vec3 L = normalize(uLightPos - vWorldPos);      // 광원 쪽 방향
+
+  // directional — 방향 하나로 고정
+  //먼 곳에서 일정히 쏟아지는 빛? 광원 위치와 무관하게 장면 전체에 영향을 줌
+  vec3 L = normalize(vec3(0.4, 0.8, 0.5)); 
+
   vec3 V = normalize(uViewPos  - vWorldPos);      // 눈 쪽 방향
+
+   
+
+
 
   // ──────────────────────────────────────────────────────────────────────
   //  ★ 단계 1~4 — 아래에 세 항을 하나씩 더해 갑니다.
@@ -140,6 +159,28 @@ void main() {
   // ──────────────────────────────────────────────────────────────────────
 
   fragColor = vec4(uBaseColor, 1.0);              // ← 지금은 그냥 단색
+  
+  //------------------1단계: 확산 반사를 넣음
+
+  vec3 diffuse = max(dot(N, L), 0.0) * uBaseColor * uLightColor;
+  fragColor = vec4(diffuse, 1.0);
+
+
+  //------------------2단계: 환경광을 넣음
+  vec3 ambient = 0.08 * uBaseColor; //베이스 밝기 조정.. 0.08부분이 커질수록 기본 배경 어두워짐
+  fragColor = vec4(ambient + diffuse, 1.0);
+
+ //------------------3단계: 정반사를 넣음
+  vec3 R = reflect(-L, N);
+  vec3 specular = pow(max(dot(R, V), 0.0), uShininess) * uLightColor * 0.5;
+  fragColor = vec4(ambient + diffuse + specular, 1.0);
+
+  
+ //------------------4단계: 거리 감쇠를 넣음
+  float d   = length(uLightPos - vWorldPos);
+  float att = 1.0 / (1.0 + 0.02 * d * d);
+  fragColor = vec4(ambient + (diffuse + specular) * att, 1.0);
+
 }
 `;
 
@@ -344,7 +385,11 @@ function render() {
 
   // 행성 — 가운데에 떠서 돈다
   let m = Mat4.multiply(Mat4.translate(0, 1.6, 0), Mat4.rotateY(t * 0.3));
-  m = Mat4.multiply(m, Mat4.scale(1.3, 1.3, 1.3));
+ 
+ //------------------------------5단계: 법선 행렬로 바꾸기 (비균등스케일 지정)
+  m = Mat4.multiply(m, Mat4.scale(1.3, 1.3, 1.3));     // 원래
+  //m = Mat4.multiply(m, Mat4.scale(0.7, 2.2, 0.7));     // 길게 늘인다
+
   draw(sphere, m, [0.80, 0.42, 0.32], 32, false);
 
   // 달 — 행성 둘레를 돈다
