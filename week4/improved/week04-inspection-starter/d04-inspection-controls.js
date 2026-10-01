@@ -81,6 +81,7 @@ window.InspectionControls = function(canvas) {
     state.target=[...target];state.distance=distance;state.rotation=normalize(mul(rollQ,between));state.actions++;
   }
   function setComparisonLayout(enabled){comparisonLayout=enabled;}
+  function setTarget(index,target){states[index].target=[...target];}
   function camera(index=active){const view=states[index],offset=rotate(view.rotation,[0,0,view.distance]);return {eye:view.target.map((v,i)=>v+offset[i]),target:[...view.target],up:rotate(view.rotation,[0,1,0]),fov:view.fov};}
-  return {get state(){return state;},get activeView(){return active;},setActive,setActiveFromEvent,home,resetView,resetAllViews,camera,panScreen,levelHorizon,focusOn,setComparisonLayout,viewports};
+  return {get state(){return state;},get activeView(){return active;},setActive,setActiveFromEvent,setTarget,home,resetView,resetAllViews,camera,panScreen,levelHorizon,focusOn,setComparisonLayout,viewports};
 };
