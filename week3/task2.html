@@ -403,6 +403,14 @@ void main() {
   color += vec3(1.00, 0.92, 0.72) * rim * lightSide * 0.42;
   color += glow;
   fragColor = vec4(color, 1.0);
+
+    // uTime 넣기 ?
+  // uTime에 따라 밝기가 반복해서 변하는 펄스(Pulse) 효과
+  float pulse = 0.55 + 0.45 * sin(uTime * 2.0);
+  
+  // 기존 색상에 pulse를 곱해서 출
+  fragColor = vec4(color * pulse, 1.0);
+
 }
 `;
 
@@ -478,6 +486,8 @@ float craters(vec3 p, float scale) {
       * smoothstep(r * 0.80, r, d) * 0.5;
   }
   return depth;
+
+  
 }
 
 void main() {
@@ -584,7 +594,7 @@ void main() {
   // 1. 위치(S)를 바탕으로 0.0 ~ 1.0 사이의 불규칙한 노이즈 값 생성 
   // fbm으로 행성표면 위치 따라 불규칙값 만듦
   //S *뒤에 나오는 수 키우면 색상이 더 촘촘하게 변하고 줄이면 넓은 구역 단위로 색이 바뀜
-  float colorNoise = fbm(S * 20.0); 
+  float colorNoise = fbm(S * 30.0); 
   
   // 2. 파란색과 핑크색을 정의
   vec3 blueLight = vec3(0.0, 1.0, 1.0); //파랑  (R,G,B)
@@ -595,13 +605,20 @@ void main() {
   vec3 cityColor = mix(blueLight, pinkLight, colorNoise);
   
   // 4. 단일 노란색 대신 계산된 다채로운 색상(cityColor)을 곱한다
-  //  불빛의 밝기(강도)이므로 더 밝게 하려면 3.0 이상으로 높이면 됨
-  vec3 glow = cityColor * day * city * (1.0 - cloud) * 4.0;
+
+  //  불빛의 밝기(강도)이므로 더 밝게 하려면 마지막을 크게하면됨
+  //citycolor: 무슨색으로 빛날지, day: 낮인지밤인지, city: 불빛이 있는지, cloud: 구름이 있는지(있으면가려짐), 1.2: 밝기조절
+  vec3 glow = cityColor * day * city * (1.0 - cloud) * 1.2;
+
 
   
 
   fragColor = vec4(color + glow, 1.0);
+
+
+
 }
+
 `;
 
 
