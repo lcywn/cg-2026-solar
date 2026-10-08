@@ -16,6 +16,16 @@
   const U=D.uniforms(gl,program,['uModel','uVP','uNormal','uColor','uText','uMap','uAlpha']);
   const cube=D.upload(gl,D.cube(1));
   const plane=D.upload(gl,{pos:new Float32Array([-.5,-.5,0,.5,-.5,0,.5,.5,0,-.5,.5,0]),nrm:new Float32Array([0,0,1,0,0,1,0,0,1,0,0,1]),uv:new Float32Array([0,0,1,0,1,1,0,1]),idx:new Uint16Array([0,1,2,0,2,3])});
+  function makeGrid(width,height,cellSize=40,lineWidth=1){
+    const rows=Math.ceil(height/cellSize),columns=Math.ceil(width/cellSize),xThickness=lineWidth/width,yThickness=lineWidth/height;
+    const positions=[],normals=[],uvs=[],indices=[];
+    const addLine=(x1,y1,x2,y2)=>{const offset=positions.length/3;positions.push(x1,y1,0,x2,y1,0,x2,y2,0,x1,y2,0);normals.push(0,0,1,0,0,1,0,0,1,0,0,1);uvs.push(0,0,0,0,0,0,0,0);indices.push(offset,offset+1,offset+2,offset,offset+2,offset+3);};
+    for(let column=0;column<=columns;column++){const x=-1+2*Math.min(column*cellSize,width)/width;addLine(x-xThickness,-1,x+xThickness,1);}
+    for(let row=0;row<=rows;row++){const y=-1+2*Math.min(row*cellSize,height)/height;addLine(-1,y-yThickness,1,y+yThickness);}
+    return D.upload(gl,{pos:new Float32Array(positions),nrm:new Float32Array(normals),uv:new Float32Array(uvs),idx:new Uint16Array(indices)});
+  }
+  const grids=new Map();
+  function getGrid(width,height){const key=`${width}x${height}`;if(!grids.has(key))grids.set(key,makeGrid(width,height));return grids.get(key);}
   function matrix(position,size,yaw=0){const m=M.create();M.translate(m,m,position);M.rotateY(m,m,yaw);M.scale(m,m,size);return m;}
   const parts=model.boxes.map(p=>({...p,matrix:matrix(p.position,p.size)}));
   function texture(sign){
@@ -82,30 +92,20 @@
   function drawSign(sign,alpha=1){
     drawMesh(plane,sign.matrix,[.25,.28,.32],false,alpha);gl.enable(gl.CULL_FACE);gl.depthFunc(gl.LEQUAL);gl.bindTexture(gl.TEXTURE_2D,sign.texture);drawMesh(plane,sign.matrix,[1,1,1],true,alpha);gl.depthFunc(gl.LESS);gl.disable(gl.CULL_FACE);
   }
-  function drawComparisonGuide(kind){
-    const extension=.2,thickness=.055;
-    if(kind==='O1'){
-      for(const id of ['o1-a','o1-b']){
-        const panel=model.boxes.find(box=>box.id===id),color=id==='o1-a'?[.1,.42,.95]:[.95,.3,.05];
-        const length=panel.size[0]+extension*2,position=[panel.position[0],panel.position[1]+panel.size[1]/2+thickness/2,panel.position[2]];
-        drawMesh(cube,matrix(position,[length,thickness,thickness]),color);
-      }
-    }else if(kind==='O2'){
-      for(const id of ['o2-a','o2-b']){
-        const unit=model.boxes.find(box=>box.id===id),color=id==='o2-a'?[.1,.42,.95]:[.95,.3,.05];
-        const front=unit.position[2]+unit.size[2]/2,position=[unit.position[0],unit.position[1],front];
-        drawMesh(cube,matrix(position,[thickness,thickness,extension*2]),color);
-      }
-    }
+  function drawComparisonGrid(width,height){
+    gl.disable(gl.DEPTH_TEST);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+    const identity=M.create();gl.uniformMatrix4fv(U.uVP,false,identity);drawMesh(getGrid(width,height),identity,[.2,.2,.2],false,.35);gl.uniformMatrix4fv(U.uVP,false,vp);
+    gl.disable(gl.BLEND);gl.enable(gl.DEPTH_TEST);
   }
   // viewport: 그리기 버퍼의 픽셀 좌표 [x,y,width,height]. 원점은 왼쪽 아래입니다.
-  function drawView(camera,viewport=[0,0,canvas.width,canvas.height],filter=null,guide=null){
+  function drawView(camera,viewport=[0,0,canvas.width,canvas.height],filter=null,gridView=false){
     const [x,y,w,h]=viewport;if(w<=0||h<=0)return;
     gl.viewport(x,y,w,h);gl.enable(gl.SCISSOR_TEST);gl.scissor(x,y,w,h);D.clearColor(gl);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.disable(gl.SCISSOR_TEST);
     M.lookAt(view,camera.eye,camera.target,camera.up||[0,1,0]);
     if(camera.orthographic){const half=camera.halfHeight||8;M.ortho(projection,-half*w/h,half*w/h,-half,half,camera.near||.02,camera.far||180);}
     else M.perspective(projection,(camera.fov||controls.state.fov)*Math.PI/180,w/h,camera.near||.02,camera.far||180);
     M.multiply(vp,projection,view);gl.useProgram(program);gl.uniformMatrix4fv(U.uVP,false,vp);gl.uniform1i(U.uMap,0);gl.activeTexture(gl.TEXTURE0);
+    if(gridView)drawComparisonGrid(w,h);
     const transparentParts=new Set(parts.filter(part=>containsPoint(camera.eye,part.position,part.size)).map(part=>part.id));
     const transparentSigns=new Set(signs.filter(sign=>containsPoint(camera.eye,sign.position,[sign.size[0],sign.size[1],.08])).map(sign=>sign.id));
     gl.disable(gl.CULL_FACE);
@@ -118,7 +118,6 @@
       for(const s of signs)if(transparentSigns.has(s.id)&&!hidden.has(s.id)&&!hidden.has(s.group))drawSign(s,.35);
       gl.depthMask(true);gl.disable(gl.BLEND);
     }
-    if(guide){gl.disable(gl.DEPTH_TEST);drawComparisonGuide(guide);gl.enable(gl.DEPTH_TEST);}
   }
   gl.enable(gl.DEPTH_TEST);
   let started=null,last='';
@@ -157,8 +156,8 @@
     const r=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2),w=Math.max(1,Math.round(r.width*dpr)),h=Math.max(1,Math.round(r.height*dpr));
     if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}
     if(api.render)api.render(api);else if(comparisonMode){
-      const halfWidth=canvas.width/2,halfHeight=canvas.height/2,scale=3.5/3,o1=model.comparisons.find(item=>item.id==='O1'),o2=model.comparisons.find(item=>item.id==='O2');
-      const ortho=index=>({...controls.camera(index),orthographic:true,halfHeight:scale});
+      const halfWidth=canvas.width/2,halfHeight=canvas.height/2,scale=3.5/3/2*1.8,initialDistance=30/1.3;
+      const ortho=index=>{const camera=controls.camera(index);return {...camera,orthographic:true,halfHeight:scale*camera.distance/initialDistance};};
       drawView(ortho(0),[0,halfHeight,halfWidth,halfHeight],new Set(['comparison-front']),'O1');
       drawView(controls.camera(1),[halfWidth,halfHeight,halfWidth,halfHeight]);
       drawView(ortho(2),[0,0,halfWidth,halfHeight],new Set(['comparison-side']),'O2');
