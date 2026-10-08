@@ -79,7 +79,7 @@ window.InspectionControls = function(canvas) {
   //카메라 이동 관련 코드 target, distance, rotation을 설정하여 카메라를 특정 위치와 방향으로 이동
   function focusOn(target,normal,radius){
     const direction=normalize(normal),worldUp=Math.abs(direction[1])>.98?[0,0,1]:[0,1,0],desiredUp=normalize(worldUp.map((value,index)=>value-direction[index]*dot(worldUp,direction))),distance=Math.max(.06,radius/(.666667*Math.tan(state.fov*Math.PI/360)));
-    const start=[0,0,1],between=normalize([...cross(start,direction),1+dot(start,direction)]),currentUp=rotate(between,[0,1,0]),roll=Math.atan2(dot(direction,cross(currentUp,desiredUp)),dot(currentUp,desiredUp)),rollQ=[direction[0]*Math.sin(roll/2),direction[1]*Math.sin(roll/2),direction[2]*Math.sin(roll/2),Math.cos(roll/2)];
+    const start=[0,0,1],alignment=dot(start,direction),between=alignment<-.999999?[0,1,0,0]:normalize([...cross(start,direction),1+alignment]),currentUp=rotate(between,[0,1,0]),roll=Math.atan2(dot(direction,cross(currentUp,desiredUp)),dot(currentUp,desiredUp)),rollQ=[direction[0]*Math.sin(roll/2),direction[1]*Math.sin(roll/2),direction[2]*Math.sin(roll/2),Math.cos(roll/2)];
     state.target=[...target];state.distance=distance;state.rotation=normalize(mul(rollQ,between));state.actions++;
   }
   function setComparisonLayout(enabled){comparisonLayout=enabled;}
