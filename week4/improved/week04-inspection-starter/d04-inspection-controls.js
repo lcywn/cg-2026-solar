@@ -75,6 +75,8 @@ window.InspectionControls = function(canvas) {
     state.rotation=normalize(mul([0,Math.sin(yaw/2),0,Math.cos(yaw/2)],[Math.sin(pitch/2),0,0,Math.cos(pitch/2)]));
     state.actions++;
   }
+
+  //카메라 이동 관련 코드 target, distance, rotation을 설정하여 카메라를 특정 위치와 방향으로 이동
   function focusOn(target,normal,radius){
     const direction=normalize(normal),worldUp=Math.abs(direction[1])>.98?[0,0,1]:[0,1,0],desiredUp=normalize(worldUp.map((value,index)=>value-direction[index]*dot(worldUp,direction))),distance=Math.max(.06,radius/(.666667*Math.tan(state.fov*Math.PI/360)));
     const start=[0,0,1],between=normalize([...cross(start,direction),1+dot(start,direction)]),currentUp=rotate(between,[0,1,0]),roll=Math.atan2(dot(direction,cross(currentUp,desiredUp)),dot(currentUp,desiredUp)),rollQ=[direction[0]*Math.sin(roll/2),direction[1]*Math.sin(roll/2),direction[2]*Math.sin(roll/2),Math.cos(roll/2)];
@@ -82,6 +84,8 @@ window.InspectionControls = function(canvas) {
   }
   function setComparisonLayout(enabled){comparisonLayout=enabled;}
   function setTarget(index,target){states[index].target=[...target];}
+
+// 실제 렌더링에 쓰이는 Eye, Target, Up 산출
   function camera(index=active){const view=states[index],offset=rotate(view.rotation,[0,0,view.distance]);return {eye:view.target.map((v,i)=>v+offset[i]),target:[...view.target],up:rotate(view.rotation,[0,1,0]),fov:view.fov,distance:view.distance};}
   return {get state(){return state;},get activeView(){return active;},setActive,setActiveFromEvent,setTarget,home,resetView,resetAllViews,camera,panScreen,levelHorizon,focusOn,setComparisonLayout,viewports};
 };
