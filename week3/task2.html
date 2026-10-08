@@ -259,32 +259,37 @@ float craters(vec3 p, float scale) {
 
       //--------------------별모양 분화구-------------------------
 
-    float r = 0.16 + 0.26 * hash31(c + 29.3);
+    float r = 0.16 + 0.26 * hash31(c + 29.3); //r: 분화구 반지름, hash31(c + 29.3): 분화구 위치에 따라 무작위 수 생성해서 분화구의 크기를 다르게 만들어줌
     
     // 1. 중심점으로부터의 방향 벡터 구하기 
     vec3 v = p - center;
     
     // 2. 3D 공간에서 각도를 구하기 위해 분화구 표면에 가상의 2D 십자선(t, b) 설정
-    vec3 n = normalize(center);
+    vec3 n = normalize(center); //분화구가 구의 표면 중 어디를 향하는지
     vec3 up = abs(n.y) > 0.99 ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 1.0, 0.0);
-    vec3 t = normalize(cross(n, up));
+
+    //분화구 주변 방향 각도 표현을 위한 2D 좌표계 
+    vec3 t = normalize(cross(n, up)); //cross에 값 두 개 넣어 둘 모두에 수직인 새로운 방향 설정
     vec3 b = cross(n, t);
     
     // 3. 중심을 기준으로 현재 위치가 몇 도 방향인지 구함 (-π ~ π)
     float angle = atan(dot(v, b), dot(v, t));
     
-    // 4. 별 모양을 만드는 핵심 수학 공식
+    // 4. 별 모양을 만드는 핵심 공식
     // 5.0은 별의 꼭짓점 개수, 0.4는 뾰족하게 파이는 깊이
     float starShape = 1.0 - 0.4 * cos(5.0 * angle); 
-    
-    // 5. 기본 둥근 거리에 별 모양 왜곡(starShape)을 곱함
-    float d = length(v) * starShape;
+    //cos(5.0 * angle) = 5개의 꼭짓점을 가진 별 모양을 만들기 위해 각도를 5배로 늘림
+    //0.4 = 얼마나 뾰족하게할지
 
-    depth -= smoothstep(r, r * 0.30, d) * 0.9;
-    depth += smoothstep(r * 1.22, r, d) * smoothstep(r * 0.80, r, d) * 0.5;
+    // 5. 기본 둥근 거리에 별 모양 왜곡(starShape)을 곱함
+    float d = length(v) * starShape; //length(v)는 분화구 중심에서 현재 위치까지의 거리, starshape 곱해서 거리 방향에 따라서 늘렸다 줄였다
+
+    depth -= smoothstep(r, r * 0.30, d) * 0.9; //분화구 안쪽으로 파는 코드
+    depth += smoothstep(r * 1.22, r, d) * smoothstep(r * 0.80, r, d) * 0.5; // 분화구 주변 모서리 둥근 테두리
   }
-  return depth;
+  return depth; 
 }
+//중심에서 얼마나 떨어졌는지 → 어느 방향인지 구함 →방향에 따라 cos(5θ)로 크기를 다르게 만듦 → ④ 그 크기를 원래 거리에 곱함 → 원의 경계가 5방향으로 튀어나오면서 별
 
 void main() {
   vec3 N = normalize(vNormal);
@@ -402,7 +407,7 @@ void main() {
 `;
 
 
-const FS_SOURCE2 = `#version 300 es
+const FS_SOURCE2 = `#version 300 es //유니콘행성 
 precision highp float;
 
 in vec3 vColor;
@@ -564,29 +569,33 @@ void main() {
   float storm = smoothstep(0.34, 0.05, distance(S, eye));
   albedo = mix(albedo, vec3(0.82, 0.34, 0.24), storm * 0.85);
 
-  /* ⑥ 폭풍 안쪽이 소용돌이치는 느낌 — 중심을 도는 각도로 결을 넣는다. */
+  /* ⑥ 폭풍 안쪽이 소용돌이치는 느낌 — 중심을 도는 각도로 결을 넣는다 */
   float ang = atan(S.y - eye.y, S.x - eye.x);
   albedo *= 1.0 + 0.12 * storm * sin(ang * 6.0 + uTime * 0.6);
 
 
-/* ⑤ 밝은 면의 스프링클 — 빛이 닿는 곳에서만 파랑, 보라, 핑크로 빛난다. */
-  float day = smoothstep(0.25, 0.70, diff);
-  float city  = smoothstep(0.70, 0.86, fbm(S * 9.0)) * step(0.50, h);
+/* ⑤ 밝은 면의 스프링클 — 빛이 닿는 곳에서만 파랑, 보라, 핑크로 빛난다 */
+  float day = smoothstep(0.25, 0.70, diff); //diff이 빛 얼마나 정면으로 받고있는지기에,,빛닿는면인지 판별
+
+  float city  = smoothstep(0.70, 0.86, fbm(S * 15.0)) * step(0.50, h); 
+  //fbm은 불규칙한 무늬 넣음
+  //step은 h값이 0.5 이상이면 1.0, 아니면 0.0 반환 → 낮은 땅에는 불빛이 안나오게
   
-  // 1. 위치(S)를 바탕으로 0.0 ~ 1.0 사이의 불규칙한 노이즈 값을 만듭니다.
-  // 숫자(15.0)를 키우면 색상이 더 촘촘하게 변하고, 줄이면 넓은 구역 단위로 색이 바뀝니다.
-  float colorNoise = fbm(S * 15.0); 
+  // 1. 위치(S)를 바탕으로 0.0 ~ 1.0 사이의 불규칙한 노이즈 값 생성 
+  // fbm으로 행성표면 위치 따라 불규칙값 만듦
+  //S *뒤에 나오는 수 키우면 색상이 더 촘촘하게 변하고 줄이면 넓은 구역 단위로 색이 바뀜
+  float colorNoise = fbm(S * 20.0); 
   
-  // 2. 파란색과 핑크색을 정의합니다.
+  // 2. 파란색과 핑크색을 정의
   vec3 blueLight = vec3(0.0, 1.0, 1.0); //파랑  (R,G,B)
   vec3 pinkLight = vec3(1.0, 0.0, 0.8); //핑크
   
-  // 3. 노이즈 값에 따라 두 색을 부드럽게 섞습니다. 
-  // 0.0에 가까우면 파랑, 1.0에 가까우면 핑크, 0.5 근처면 섞여서 보라색이 됩니다.
+  // 3. 노이즈 값에 따라 두 색을 부드럽게 섞음 
+  // color noise가 0.0에 가까우면 파랑, 1.0에 가까우면 핑크, 0.5 근처면 섞여서 보라색, 랜덤히 달라지는 색무늬
   vec3 cityColor = mix(blueLight, pinkLight, colorNoise);
   
-  // 4. 단일 노란색 대신 계산된 다채로운 색상(cityColor)을 곱해줍니다.
-  // 2.2는 불빛의 밝기(강도)이므로 더 밝게 하려면 3.0 이상으로 높이시면 됩니다.
+  // 4. 단일 노란색 대신 계산된 다채로운 색상(cityColor)을 곱한다
+  //  불빛의 밝기(강도)이므로 더 밝게 하려면 3.0 이상으로 높이면 됨
   vec3 glow = cityColor * day * city * (1.0 - cloud) * 4.0;
 
   
