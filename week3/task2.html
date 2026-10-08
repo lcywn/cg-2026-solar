@@ -380,7 +380,7 @@ void main() {
 
   //--------------------구름-------------------------------
   // 구름은 표면 좌표를 조금씩 이동시켜 시간에 따라 흐르게 한다.
-  vec3 drift = vec3(cos(uTime * 0.06), 0.0, sin(uTime * 0.06));
+  vec3 drift = vec3(cos(uTime * 0.06), 0.0, sin(uTime * 0.06)); //uTime에 따라 구름 움직이게 만듦
   float cloud = smoothstep(0.55, 0.72, fbm(S * 3.4 + drift * 1.6));
   albedo = mix(albedo, vec3(0.06, 0.10, 0.28), cloud * 0.75);
 
@@ -403,13 +403,6 @@ void main() {
   color += vec3(1.00, 0.92, 0.72) * rim * lightSide * 0.42;
   color += glow;
   fragColor = vec4(color, 1.0);
-
-    // uTime 넣기 ?
-  // uTime에 따라 밝기가 반복해서 변하는 펄스(Pulse) 효과
-  float pulse = 0.55 + 0.45 * sin(uTime * 2.0);
-  
-  // 기존 색상에 pulse를 곱해서 출
-  fragColor = vec4(color * pulse, 1.0);
 
 }
 `;
