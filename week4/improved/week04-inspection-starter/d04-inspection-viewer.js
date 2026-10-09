@@ -125,6 +125,16 @@
   document.querySelector('#home').addEventListener('click',()=>{controls.home();controls.state.actions++;});
   document.querySelector('#measure').addEventListener('click',()=>{started=performance.now();controls.state.actions=0;});
   const viewport=document.querySelector('.viewport'),compareButton=document.querySelector('#compare-mode');
+  const previousStepButton=document.querySelector('#step-previous'),nextStepButton=document.querySelector('#step-next');
+  let inspectionStep=0;
+  function showInspectionStep(step){
+    inspectionStep=step<1?model.poi.length:step>model.poi.length?1:step;
+    const point=model.poi[inspectionStep-1],sign=signs.find(item=>item.id===point.id);
+    if(!sign)return;
+    controls.focusOn(sign.position,[Math.sin(sign.yaw),0,Math.cos(sign.yaw)],point.size[0]/2,250,2000);
+  }
+  previousStepButton.addEventListener('click',()=>showInspectionStep(inspectionStep===0?model.poi.length:inspectionStep-1));
+  nextStepButton.addEventListener('click',()=>showInspectionStep(inspectionStep===0?1:inspectionStep+1));
   let comparisonMode=false;
   compareButton.addEventListener('click',()=>{
     comparisonMode=!comparisonMode;controls.setComparisonLayout(comparisonMode);viewport.classList.toggle('compare-mode',comparisonMode);compareButton.classList.toggle('active',comparisonMode);

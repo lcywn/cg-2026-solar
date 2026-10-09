@@ -142,6 +142,29 @@ html, body {
   z-index: 1;
 }
 
+.step-controls {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  gap: 4px;
+  z-index: 1;
+}
+
+.step-controls button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--d-line-strong);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--d-bg) 88%, transparent);
+  color: var(--d-ink);
+  font: 18px/24px sans-serif;
+  cursor: pointer;
+}
+
+.step-controls button:hover { border-color: var(--d-accent); color: var(--d-accent); }
+
 .view-action-stack {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

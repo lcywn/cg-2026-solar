@@ -16,7 +16,9 @@ window.InspectionControls = function(canvas) {
   const makeState=()=>({target:[3,3,0],distance:30,rotation:[0,0,0,1],fov:45,actions:0});
   const states=[makeState(),makeState(),makeState(),makeState()];
   let active=0,state=states[0],comparisonLayout=false;
+  let transition=null;
   function resetView(index=active){
+    transition=null;
     const view=states[index],rotations=[[0,0,0,1],homeRotation(),[0,Math.sin(Math.PI/4),0,Math.cos(Math.PI/4)],[0,1,0,0]];
     view.target=[3,3,0];view.distance=index===1?30:initialDistance;view.rotation=[...rotations[index]];view.fov=45;view.actions++;
   }
@@ -34,10 +36,12 @@ window.InspectionControls = function(canvas) {
   function viewRect(){const r=canvas.getBoundingClientRect(),view=viewports(r.width,r.height)[active];return {left:r.left+view.left,top:r.top+view.top,width:view.width,height:view.height};}
   function sphere(e){const r=viewRect(),s=Math.min(r.width,r.height),x=(2*(e.clientX-r.left)-r.width)/s,y=(r.height-2*(e.clientY-r.top))/s,d=x*x+y*y;return d<=1?[x,y,Math.sqrt(1-d)]:normalize([x,y,0]);}
   let drag=null;
+  function cancelTransition(){transition=null;}
   canvas.style.touchAction='none';
   canvas.addEventListener('contextmenu',e=>e.preventDefault());
   canvas.addEventListener('pointerdown',e=>{
     if(drag || ![0,2].includes(e.button))return;
+    cancelTransition();
     setActiveFromEvent(e);
     drag={id:e.pointerId,p:sphere(e),x:e.clientX,y:e.clientY,q:[...state.rotation],target:[...state.target],pan:e.shiftKey||e.button===2};
     state.actions++;canvas.setPointerCapture(e.pointerId);
@@ -57,35 +61,51 @@ window.InspectionControls = function(canvas) {
     }
   });
   for(const event of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(event,e=>{if(drag?.id===e.pointerId)drag=null;});
-  canvas.addEventListener('wheel',e=>{e.preventDefault();state.distance=Math.max(.06,Math.min(100,state.distance*Math.exp(e.deltaY*.001)));state.actions++;},{passive:false});
+  canvas.addEventListener('wheel',e=>{e.preventDefault();cancelTransition();state.distance=Math.max(.06,Math.min(100,state.distance*Math.exp(e.deltaY*.001)));state.actions++;},{passive:false});
   canvas.addEventListener('keydown',e=>{
     if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','+','-','Home'].includes(e.key))return;e.preventDefault();state.actions++;
+    cancelTransition();
     if(e.key==='Home'){home();return;}
     if(e.key==='+')state.distance=Math.max(.06,state.distance/1.12);
     else if(e.key==='-')state.distance=Math.min(100,state.distance*1.12);
     else {const h=e.key==='ArrowLeft'?.06:e.key==='ArrowRight'?-.06:0,v=e.key==='ArrowUp'?.06:e.key==='ArrowDown'?-.06:0;state.rotation=normalize(mul(state.rotation,normalize([v,h,0,1])));}
   });
   function panScreen(horizontal,vertical){
+    cancelTransition();
     const r=viewRect(),unit=2*state.distance*Math.tan(state.fov*Math.PI/360)/r.height, right=rotate(state.rotation,[1,0,0]),up=rotate(state.rotation,[0,1,0]),step=24*unit;
     state.target=state.target.map((value,index)=>value-horizontal*step*right[index]+vertical*step*up[index]);
     state.actions++;
   }
   function levelHorizon(){
+    cancelTransition();
     const offset=normalize(rotate(state.rotation,[0,0,1])),horizontal=Math.hypot(offset[0],offset[2]),yaw=Math.atan2(offset[0],offset[2]),pitch=-Math.atan2(offset[1],horizontal||1);
     state.rotation=normalize(mul([0,Math.sin(yaw/2),0,Math.cos(yaw/2)],[Math.sin(pitch/2),0,0,Math.cos(pitch/2)]));
     state.actions++;
   }
 
   //카메라 이동 관련 코드 target, distance, rotation을 설정하여 카메라를 특정 위치와 방향으로 이동
-  function focusOn(target,normal,radius){
+  function focusOn(target,normal,radius,pixelWidth=null,duration=0){
     const direction=normalize(normal),worldUp=Math.abs(direction[1])>.98?[0,0,1]:[0,1,0],desiredUp=normalize(worldUp.map((value,index)=>value-direction[index]*dot(worldUp,direction))),distance=Math.max(.06,radius/(.666667*Math.tan(state.fov*Math.PI/360)));
     const start=[0,0,1],alignment=dot(start,direction),between=alignment<-.999999?[0,1,0,0]:normalize([...cross(start,direction),1+alignment]),currentUp=rotate(between,[0,1,0]),roll=Math.atan2(dot(direction,cross(currentUp,desiredUp)),dot(currentUp,desiredUp)),rollQ=[direction[0]*Math.sin(roll/2),direction[1]*Math.sin(roll/2),direction[2]*Math.sin(roll/2),Math.cos(roll/2)];
-    state.target=[...target];state.distance=distance;state.rotation=normalize(mul(rollQ,between));state.actions++;
+    const view=viewRect(),pixelDistance=pixelWidth===null?distance:2*radius*view.height/(pixelWidth*Math.tan(state.fov*Math.PI/360));
+    const destination={target:[...target],distance:Math.max(.06,pixelDistance),rotation:normalize(mul(rollQ,between))};
+    if(duration>0){transition={view,from:{target:[...state.target],distance:state.distance,rotation:[...state.rotation]},to:destination,start:performance.now(),duration};}
+    else {state.target=destination.target;state.distance=destination.distance;state.rotation=destination.rotation;}
+    state.actions++;
+  }
+  function advanceTransition(){
+    if(!transition)return;
+    const progress=Math.min(1,(performance.now()-transition.start)/transition.duration),smooth=progress*progress*(3-2*progress),from=transition.from,to=transition.to;
+    state.target=from.target.map((value,index)=>value+(to.target[index]-value)*smooth);
+    state.distance=from.distance+(to.distance-from.distance)*smooth;
+    const rotation=dot(from.rotation,to.rotation)<0?to.rotation.map(value=>-value):to.rotation;
+    state.rotation=normalize(from.rotation.map((value,index)=>value+(rotation[index]-value)*smooth));
+    if(progress>=1){state.target=to.target;state.distance=to.distance;state.rotation=to.rotation;transition=null;}
   }
   function setComparisonLayout(enabled){comparisonLayout=enabled;}
   function setTarget(index,target){states[index].target=[...target];}
 
 // 실제 렌더링에 쓰이는 Eye, Target, Up 산출
-  function camera(index=active){const view=states[index],offset=rotate(view.rotation,[0,0,view.distance]);return {eye:view.target.map((v,i)=>v+offset[i]),target:[...view.target],up:rotate(view.rotation,[0,1,0]),fov:view.fov,distance:view.distance};}
+  function camera(index=active){const view=states[index];if(view===state)advanceTransition();const offset=rotate(view.rotation,[0,0,view.distance]);return {eye:view.target.map((v,i)=>v+offset[i]),target:[...view.target],up:rotate(view.rotation,[0,1,0]),fov:view.fov,distance:view.distance};}
   return {get state(){return state;},get activeView(){return active;},setActive,setActiveFromEvent,setTarget,home,resetView,resetAllViews,camera,panScreen,levelHorizon,focusOn,setComparisonLayout,viewports};
 };
