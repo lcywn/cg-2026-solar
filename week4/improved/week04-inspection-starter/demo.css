@@ -163,6 +163,18 @@ html, body {
   cursor: pointer;
 }
 
+.step-controls .step-indicator {
+  display: block;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--d-line-strong);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--d-bg) 88%, transparent);
+  color: var(--d-ink);
+  font: 11px/26px sans-serif;
+  text-align: center;
+}
+
 .step-controls button:hover { border-color: var(--d-accent); color: var(--d-accent); }
 
 .view-action-stack {

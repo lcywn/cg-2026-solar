@@ -126,9 +126,12 @@
   document.querySelector('#measure').addEventListener('click',()=>{started=performance.now();controls.state.actions=0;});
   const viewport=document.querySelector('.viewport'),compareButton=document.querySelector('#compare-mode');
   const previousStepButton=document.querySelector('#step-previous'),nextStepButton=document.querySelector('#step-next');
+  const stepIndicator=document.querySelector('#step-indicator');
   let inspectionStep=0;
   function showInspectionStep(step){
     inspectionStep=step<1?model.poi.length:step>model.poi.length?1:step;
+    stepIndicator.value='P'+inspectionStep;
+    stepIndicator.textContent='P'+inspectionStep;
     const point=model.poi[inspectionStep-1],sign=signs.find(item=>item.id===point.id);
     if(!sign)return;
     controls.focusOn(sign.position,[Math.sin(sign.yaw),0,Math.cos(sign.yaw)],point.size[0]/2,250,2000);
