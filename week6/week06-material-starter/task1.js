@@ -59,17 +59,42 @@ void main(){
  // 수치 맵에는 sRGB 변환을 적용하지 마세요.
 
  float rough=uRough,metal=uMetal,ao=1.0;
+ 
  // TODO 3: uARM의 R(AO), G(roughness), B(metallic)를 읽으세요.
+ vec3 arm = texture(uARM, vUV).rgb;
+ ao = arm.r;
+ rough = max(arm.g*uRough, 0.045);
+ metal = arm.b*uMetal; 
+
  // 슬라이더 uRough/uMetal은 맵 값에 곱하는 배율입니다.
 
  // TODO 4: uNormal에서 접선 공간 법선을 읽고 N을 바꾸세요.
  // vP와 vUV의 dFdx/dFdy로 TBN을 만들어도 됩니다.
  // uNormalStrength=0이면 기하 법선을 그대로 사용하세요.
+ if (uNormalStrength > 0.0) {
+  vec3 dp1=dFdx(vP), dp2=dFdy(vP);
+  vec2 du1=dFdx(vUV), du2=dFdy(vUV);
+  vec3 T=cross(dp2,N)*du1.x+cross(N,dp1)*du2.x;
+  vec3 B=cross(dp2,N)*du1.y+cross(N,dp1)*du2.y;
+  float inv=inversesqrt(max(max(dot(T,T),dot(B,B)),1e-8));
+  vec3 mapN=texture(uNormal,vUV).xyz*2.0-1.0;
+  mapN.xy *= uNormalStrength;
+  N=normalize(mat3(T*inv,B*inv,N)*normalize(mapN));
+}
 
+
+ /* Task2를 위한 삭제
  float nl=max(dot(N,L),0.0);
  vec3 R=reflect(-L,N);
  vec3 color=base*(uAmbient+uPower*nl)
            +vec3(0.6)*uPower*pow(max(dot(R,V),0.0),32.0)*step(0.0001,nl);
+*/
+
+ vec3 color = directPBR(N,V,L,base,rough,metal);
+ vec3 F0 = mix(vec3(0.04),base,metal);
+//uAmbient = 0.0; // TODO 2: 직접광만 비교할 때는 uAmbient=0으로 설정
+ color += uAmbient * ao * (base*(1.0-metal)*(1.0-F0)+F0);
+
  // TODO 2: 위의 Phong 두 줄을 directPBR(...) 호출과 ambient로 교체하세요.
  // 환경맵을 끄고 uAmbient=0일 때 직접광만 비교해 보세요.
 
