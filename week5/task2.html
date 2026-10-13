@@ -149,15 +149,16 @@ void main() {
   vec3 V = normalize(uViewPos - vWorldPos); //카메라가 바라보는 방향
 
   // 중앙 행성 중심에 있는 point 광원은 모든 방향으로 빛을 낸다.
-  vec3 pointPos = vec3(0.0, 1.6, 0.0);
+  //vec3 pointPos = vec3(0.0, 1.6, 0.0);
+
+  vec3 pointPos = vec3(0.0, 3.2, 1.2);
   vec3 pointL = normalize(pointPos - vWorldPos);
   float pointNDotL = max(dot(N, pointL), 0.0);
   vec3 pointColor = vec3(0.2, 0.5, 1.0);
   vec3 pointDiffuse = pointNDotL * uBaseColor * pointColor;
   vec3 pointR = reflect(-pointL, N);
   float pointFrontMask = step(0.0, dot(N, pointL));
-  vec3 pointSpecular = pow(max(dot(pointR, V), 0.0), uShininess)
-                     * pointColor * 0.5 * pointFrontMask;
+  vec3 pointSpecular = pow(max(dot(pointR, V), 0.0), uShininess) * pointColor * 0.5 * pointFrontMask;
   float pointDistance = length(pointPos - vWorldPos);
   float pointAtt = 1.0 / (1.0 + 0.02 * pointDistance * pointDistance);
   vec3 pointResult = (pointDiffuse + pointSpecular) * pointAtt;
