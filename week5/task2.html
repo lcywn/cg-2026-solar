@@ -98,11 +98,13 @@ void main() {
 
 //--------------------------------5단계: 법선 행렬로 바꿉니다 
   //바꾸기전 
- //vNormal = mat3(uModel) * aNormal; 
+ vNormal = mat3(uModel) * aNormal; 
 
- vNormal = uNormalMat * aNormal; 
  //바꾼후 
+ ///vNormal = uNormalMat * aNormal; 
+ 
 
+ 
   gl_Position = uProj * uView * world;
 }
 `;
@@ -149,20 +151,31 @@ void main() {
   vec3 V = normalize(uViewPos - vWorldPos); //카메라가 바라보는 방향
 
   // 중앙 행성 중심에 있는 point 광원은 모든 방향으로 빛을 낸다.
-  //vec3 pointPos = vec3(0.0, 1.6, 0.0);
+  // vec3 pointPos = vec3(0.0, 1.6, 0.0);
 
-  vec3 pointPos = vec3(0.0, 3.2, 1.2);
+ 
+ 
+  vec3 pointPos = vec3(0.0, 3.2, 1.2); //광원 대각선으로 두기
   vec3 pointL = normalize(pointPos - vWorldPos);
-  float pointNDotL = max(dot(N, pointL), 0.0);
+  float pointNDotLRaw = dot(N, pointL);
+  float pointFrontMask = pointNDotLRaw > 0.0 ? 1.0 : 0.0;
+  float pointNDotL = max(pointNDotLRaw, 0.0);
   vec3 pointColor = vec3(0.2, 0.5, 1.0);
-  vec3 pointDiffuse = pointNDotL * uBaseColor * pointColor;
+
+  
+  vec3 pointDiffuse = pointNDotL * uBaseColor * pointColor * pointFrontMask;
   vec3 pointR = reflect(-pointL, N);
-  float pointFrontMask = step(0.0, dot(N, pointL));
+
+
+ 
+
   vec3 pointSpecular = pow(max(dot(pointR, V), 0.0), uShininess) * pointColor * 0.5 * pointFrontMask;
   float pointDistance = length(pointPos - vWorldPos);
   float pointAtt = 1.0 / (1.0 + 0.02 * pointDistance * pointDistance);
-  vec3 pointResult = (pointDiffuse + pointSpecular) * pointAtt;
+  vec3 pointResult = (pointDiffuse + pointSpecular) * pointAtt * pointFrontMask;
 
+
+  
   vec3 L = normalize(uLightPos - vWorldPos); // 스포트라이트가 향하는 방향
   // 현재 광원은 중앙에서 가장 먼 노란 스포트라이트 하나만 사용한다.
 
@@ -170,7 +183,7 @@ void main() {
   // -------------------------------6단계: 광원의 종류 변경
 
 
-  //────────────────────────────────────────────────────────────────────
+ // ───────────────────────────────────────────────────────────────────
   //  ★ 단계 1~4 — 아래에 세 항을 하나씩 더해 갑니다.
   //
   //   단계 1 (확산광)  vec3 diffuse = max(dot(N, L), 0.0) * uBaseColor * uLightColor;
@@ -183,7 +196,7 @@ void main() {
   //
   //  그리고 아래 한 줄을  fragColor = vec4(ambient + (diffuse + specular) * att, 1.0);
   //  처럼 바꿉니다.
-  // ──────────────────────────────────────────────────────────────────────
+  //──────────────────────────────────────────────────────────────────
 
   // fragColor = vec4(uBaseColor, 1.0);              // ← 지금은 그냥 단색
   
