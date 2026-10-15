@@ -13,7 +13,7 @@
 </head>
 <body>
 <canvas id="glcanvas"></canvas>
-<p id="hint">드래그 = 시점 회전 · 휠 = 확대/축소 · 1 = point · 2 = spot</p>
+<p id="hint">드래그 = 시점 회전 · 휠 = 확대/축소 · 1 = point · 2 = spot · 3 = freeze</p>
 
 <script>
 /* ============================================================================
@@ -379,11 +379,26 @@ const cam = { yaw: 0.6, pitch: 0.42, dist: 11 };
 let dragging = false, lastX = 0, lastY = 0;
 let pointOn = false;
 let spotOn = true;
+let freezeOn = false;
+let frozenTime = 0;
+let freezeStartedAt = 0;
+let pausedDuration = 0;
 
-// 1과 2는 각각 다른 광원 상태만 반전시킨다.
+// 1과 2는 광원 상태를, 3은 전체 애니메이션 상태를 반전시킨다.
 window.addEventListener('keydown', function (e) {
   if (e.key === '1') pointOn = !pointOn;
   if (e.key === '2') spotOn = !spotOn;
+  if (e.key === '3') {
+    const now = performance.now();
+    if (!freezeOn) {
+      frozenTime = (now - startTime - pausedDuration) / 1000;
+      freezeStartedAt = now;
+      freezeOn = true;
+    } else {
+      pausedDuration += now - freezeStartedAt;
+      freezeOn = false;
+    }
+  }
 });
 
 canvas.addEventListener('pointerdown', function (e) {
@@ -432,7 +447,8 @@ function render() {
   gl.clearColor(0.04, 0.06, 0.10, 1.0);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  const t = (performance.now() - startTime) / 1000;
+  const elapsedTime = (performance.now() - startTime - pausedDuration) / 1000;
+  const t = freezeOn ? frozenTime : elapsedTime;
 
   // 카메라
   const cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
