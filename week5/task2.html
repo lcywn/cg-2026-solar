@@ -498,6 +498,11 @@ function render() {
   mm = Mat4.multiply(mm, Mat4.scale(0.42, 0.42, 0.42));
   draw(sphere, mm, [0.85, 0.15, 0.15], 1, false, 0.5); //색상 붉게 변경, ushiniess을 16->1로 낮춤
 
+  // 뉴성 — 공전하지 않고 안내 문구의 시점 회전과 휠 사이에 고정한다.
+  let mn = Mat4.translate(5.0, 5.6, 4.1);
+  mn = Mat4.multiply(mn, Mat4.scale(0.39, 0.39, 0.39));
+  draw(sphere, mn, [1.0, 0.65, 0.75], 40, false, 0.5);
+
   // 광원 위치 표시 — 스스로 빛나는 물체
   let ml = Mat4.multiply(Mat4.translate(lightPos[0], lightPos[1], lightPos[2]),
                          Mat4.scale(0.22, 0.22, 0.22));
