@@ -380,22 +380,22 @@ let dragging = false, lastX = 0, lastY = 0;
 let pointOn = false;
 let spotOn = true;
 let freezeOn = false;
-let frozenTime = 0;
+let frozenSpotTime = 0;
 let freezeStartedAt = 0;
-let pausedDuration = 0;
+let spotPausedDuration = 0;
 
-// 1과 2는 광원 상태를, 3은 전체 애니메이션 상태를 반전시킨다.
+// 1과 2는 광원 상태를, 3은 노란 스포트라이트 애니메이션 상태를 반전시킨다.
 window.addEventListener('keydown', function (e) {
   if (e.key === '1') pointOn = !pointOn;
   if (e.key === '2') spotOn = !spotOn;
   if (e.key === '3') {
     const now = performance.now();
     if (!freezeOn) {
-      frozenTime = (now - startTime - pausedDuration) / 1000;
+      frozenSpotTime = (now - startTime - spotPausedDuration) / 1000;
       freezeStartedAt = now;
       freezeOn = true;
     } else {
-      pausedDuration += now - freezeStartedAt;
+      spotPausedDuration += now - freezeStartedAt;
       freezeOn = false;
     }
   }
@@ -447,8 +447,9 @@ function render() {
   gl.clearColor(0.04, 0.06, 0.10, 1.0);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  const elapsedTime = (performance.now() - startTime - pausedDuration) / 1000;
-  const t = freezeOn ? frozenTime : elapsedTime;
+  const elapsedTime = (performance.now() - startTime) / 1000;
+  const t = elapsedTime;
+  const spotTime = freezeOn ? frozenSpotTime : elapsedTime - spotPausedDuration / 1000;
 
   // 카메라
   const cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
@@ -459,7 +460,7 @@ function render() {
   const proj = Mat4.perspective(Math.PI / 4, canvas.width / canvas.height, 0.1, 200);
 
   // 광원 — 장면 위를 천천히 돈다
-  const lightPos = [Math.cos(t * 0.4) * 5.0, 3.6, Math.sin(t * 0.4) * 5.0];
+  const lightPos = [Math.cos(spotTime * 0.4) * 5.0, 3.6, Math.sin(spotTime * 0.4) * 5.0];
 
   gl.useProgram(program);                       // ← uniform 을 넣기 전에 반드시 먼저!
 
