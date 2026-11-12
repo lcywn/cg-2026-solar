@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>7주차 · 기본 ray tracing 따라 만들기 시작 코드</title>
+<link rel="stylesheet" href="demo.css">
+<style>
+.wrap{grid-template-columns:minmax(0,1fr) 17rem;height:100vh;height:100dvh}
+.stage{min-height:340px}.stage canvas{width:100%;height:100%;max-width:none;max-height:none;touch-action:none}
+.orbit-actions{display:flex;flex-wrap:wrap;gap:.4rem;margin:0 0 1rem}.orbit-actions button{flex:1 1 7rem}
+@media(max-width:800px){.wrap{display:block;height:auto}.stage{height:68vh;min-height:340px}.panel{max-height:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="stage"><canvas id="cv" aria-label="학생이 TODO를 채워 완성하는 기본 ray tracing 시작 코드"></canvas></div>
+  <aside class="panel">
+    <h1>기본 ray tracing 실습 1 · 시작 코드</h1>
+    <p class="sub">task1.js의 TODO 1~3을 아래 수업 자료의 코드로 채우세요. 위성 공전 위치를 바꾸면 일식과 월식을 모두 볼 수 있습니다. 드래그: 카메라 회전 · 휠: 확대</p>
+    <div id="ui"></div>
+    <div class="orbit-actions"><button id="solar" type="button">일식 보기</button><button id="lunar" type="button">월식 보기</button><button id="play" type="button">공전 재생</button></div>
+    <button id="reset" type="button">시점 초기화</button>
+    <p class="note">넓은 관측실의 바닥·뒷벽과 위성 공전은 준비되어 있습니다. TODO 1~2로 천체를 그린 뒤 TODO 3에서 행성 위의 일식 그림자와 행성 뒤 어두워지는 위성(월식)을 확인하세요.</p>
+    <p id="status" role="status"></p>
+  </aside>
+</div>
+<script src="demo.js"></script>
+<script src="task1.js"></script>
+</body>
+</html>

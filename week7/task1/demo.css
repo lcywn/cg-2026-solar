@@ -1,0 +1,296 @@
+/* 강의 자료 인터랙티브 예제 공용 스타일 — 홈페이지와 같은 밝고 단정한 톤 */
+
+/* 테마는 세 곳에서 정해진다.
+   1) 강의 페이지 안에 들어가 있으면 부모의 밝은/어두운 설정 (data-theme)
+   2) 단독으로 열면 OS 설정 (prefers-color-scheme)
+   3) ?theme=light|dark 로 직접 지정
+   그래서 밝은 값을 기본으로 두고, 어두운 값을 두 조건에 각각 다시 적어 준다. */
+
+:root {
+  --d-accent: #1f6feb;
+  --d-accent-soft: #eaf1fe;
+  --d-ink: #1c2430;
+  --d-ink-soft: #3c4757;
+  --d-muted: #64707f;
+  --d-bg: #ffffff;
+  --d-bg-soft: #f7f9fc;
+  --d-line: #e3e8ef;
+  --d-line-strong: #d3dae4;
+
+  /* 3D 장면 — 배경과 보조선 */
+  --d-canvas: #eef2f8;
+  --d-grid: #cdd7e5;
+  --d-axis: #7d8b9e;
+  --d-ghost: #5f6b7d;
+  --d-hint: #97a4b5;
+
+  /* 벡터·물체를 구분하는 색 (배경 대비에 맞춰 조정) */
+  --d-vec-a: #1f6feb;
+  --d-vec-b: #0b7d67;
+  --d-vec-c: #d2600f;
+  --d-trail: #157f6a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --d-accent: #7aaeff;
+    --d-accent-soft: #1b2432;
+    --d-ink: #e7ecf3;
+    --d-ink-soft: #cbd4e1;
+    --d-muted: #9aa7b8;
+    --d-bg: #1a212c;
+    --d-bg-soft: #161c26;
+    --d-line: #2c3542;
+    --d-line-strong: #3a4553;
+  
+    /* 3D 장면 — 배경과 보조선 */
+    --d-canvas: #0a0d14;
+    --d-grid: #242e42;
+    --d-axis: #57667f;
+    --d-ghost: #8c93a6;
+    --d-hint: #59647a;
+  
+    /* 벡터·물체를 구분하는 색 (배경 대비에 맞춰 조정) */
+    --d-vec-a: #5ca8fa;
+    --d-vec-b: #33b88c;
+    --d-vec-c: #ff8c4d;
+    --d-trail: #38705f;
+  }
+}
+
+:root[data-theme="dark"] {
+  --d-accent: #7aaeff;
+  --d-accent-soft: #1b2432;
+  --d-ink: #e7ecf3;
+  --d-ink-soft: #cbd4e1;
+  --d-muted: #9aa7b8;
+  --d-bg: #1a212c;
+  --d-bg-soft: #161c26;
+  --d-line: #2c3542;
+  --d-line-strong: #3a4553;
+
+  /* 3D 장면 — 배경과 보조선 */
+  --d-canvas: #0a0d14;
+  --d-grid: #242e42;
+  --d-axis: #57667f;
+  --d-ghost: #8c93a6;
+  --d-hint: #59647a;
+
+  /* 벡터·물체를 구분하는 색 (배경 대비에 맞춰 조정) */
+  --d-vec-a: #5ca8fa;
+  --d-vec-b: #33b88c;
+  --d-vec-c: #ff8c4d;
+  --d-trail: #38705f;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--d-bg);
+  color: var(--d-ink-soft);
+  font: 13px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR",
+        "Malgun Gothic", Roboto, sans-serif;
+}
+
+.wrap {
+  display: grid;
+  grid-template-columns: 1fr 15rem;
+  gap: 0;
+  height: 100vh;
+}
+
+.stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  background: var(--d-bg-soft);
+  overflow: hidden;
+}
+
+.stage canvas {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.readout {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 5px 9px;
+  border: 1px solid var(--d-line-strong);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--d-bg) 88%, transparent);
+  color: var(--d-ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.6;
+  white-space: pre;
+  pointer-events: none;
+}
+
+.panel {
+  padding: 12px 13px 16px;
+  border-left: 1px solid var(--d-line);
+  background: var(--d-bg);
+  overflow-y: auto;
+}
+
+.panel h1 {
+  margin: 0 0 2px;
+  color: var(--d-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.panel .sub {
+  margin: 0 0 12px;
+  color: var(--d-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.ctl { margin-bottom: 11px; }
+
+.ctl label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 3px;
+  color: var(--d-ink);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.ctl label .val {
+  color: var(--d-accent);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ctl input[type="range"] {
+  width: 100%;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--d-accent);
+  cursor: pointer;
+}
+
+.ctl select {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid var(--d-line-strong);
+  border-radius: 5px;
+  background: var(--d-bg);
+  color: var(--d-ink);
+  font: inherit;
+  font-size: 11.5px;
+}
+
+.ctl.check label {
+  justify-content: flex-start;
+  cursor: pointer;
+}
+
+.ctl.check input { accent-color: var(--d-accent); margin: 0 6px 0 0; }
+
+.ctl .hint {
+  margin-top: 2px;
+  color: var(--d-muted);
+  font-size: 10.5px;
+  line-height: 1.5;
+}
+
+.note {
+  margin-top: 12px;
+  padding: 8px 9px;
+  border: 1px solid var(--d-line);
+  border-left: 2px solid var(--d-accent);
+  border-radius: 5px;
+  background: var(--d-bg-soft);
+  color: var(--d-ink-soft);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.note b { color: var(--d-ink); }
+
+.btn {
+  width: 100%;
+  padding: 6px 8px;
+  margin-bottom: 11px;
+  border: 1px solid var(--d-line-strong);
+  border-radius: 5px;
+  background: var(--d-bg);
+  color: var(--d-ink);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn:hover { border-color: var(--d-accent); color: var(--d-accent); }
+
+.err {
+  padding: 12px;
+  color: #b4232a;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  white-space: pre-wrap;
+}
+
+/* 성분 직접 입력 패널 — 슬라이더 대신 x, y, z 를 그대로 넣는다 */
+
+.ctl[hidden] { display: none !important; }   /* .ctl 의 display 규칙보다 우선하도록 */
+
+.comp { display: none; margin: 2px 0 12px; }
+.comp.on { display: block; }
+
+.comp-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 5px;
+}
+
+.comp-row > span {
+  flex: 0 0 1.15rem;
+  color: var(--d-ink);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.comp input {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 4px 5px;
+  border: 1px solid var(--d-line-strong);
+  border-radius: 5px;
+  background: var(--d-bg);
+  color: var(--d-accent);
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.comp input:focus { outline: none; border-color: var(--d-accent); }
+.comp input.bad { border-color: #b4232a; color: #b4232a; }
+
+.comp-hint {
+  margin-top: 3px;
+  color: var(--d-muted);
+  font-size: 10.5px;
+  line-height: 1.55;
+}
+
+@media (max-width: 620px) {
+  .wrap { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+  .panel { border-left: 0; border-top: 1px solid var(--d-line); max-height: 46vh; }
+}
