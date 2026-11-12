@@ -24,13 +24,22 @@
    vec3 right=normalize(cross(forward,vec3(0.0,1.0,0.0)));
    vec3 up=cross(right,forward);
    return normalize(1.7*forward+uv.x*right+uv.y*up);
-
-
   }
 
   // TODO 2: 광선과 구의 가까운 양수 교차 거리 t를 계산한다.
   float hitSphere(vec3 ro,vec3 rd,vec3 center,float radius){
-    return -1.0; // 시작 상태: 모든 구를 놓친다
+    // return -1.0; // 시작 상태: 모든 구를 놓친다
+    vec3 oc=ro-center;
+    float a=dot(rd,rd);
+    float halfB=dot(oc,rd);
+    float c=dot(oc,oc)-radius*radius;
+    float disc=halfB*halfB-a*c;
+    if(disc<0.0)return -1.0;
+    float root=sqrt(disc);
+    float t=(-halfB-root)/a;
+    if(t>0.002)return t;
+    t=(-halfB+root)/a;
+    return t>0.002?t:-1.0;
   }
 
   float traceScene(vec3 ro,vec3 rd,out int hitId){
