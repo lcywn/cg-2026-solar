@@ -9,7 +9,7 @@
 | 기기 종류 | GPU | CPU(확인 가능한 범위) | 운영체제 | 브라우저 | 전원 상태
 | - | - | - | - | - | - |
 | MacBook Pro 14 | Apple M2 Pro 19-Core GPU | Apple M2 Pro | macOS Tahoe (버전 26.6.2) | 사파리 | 59% (배터리 사용중)
-| iPhone 15 Pro | 정확한 GPU명 미확인, GPU Benchmark Score: 24346 | Apple A17 @ 3.78 GHz | iOS 26.2.2 | 사파리 | 31% (배터리 사용중)
+| iPhone 15 Pro | 정확한 GPU명 미확인, GPU Benchmark Score: 24346 | Apple A17 @ 3.78 GHz | iOS 26.2.2 | 사파리 | 29% (배터리 사용중)
 
 ### 공통 조건 비교
 
