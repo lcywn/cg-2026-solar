@@ -1,0 +1,30 @@
+# 7주차 보고서
+
+## task 1
+
+
+## task 2
+배포와 기기 : PC+핸드폰
+사양
+| 기기 종류 | GPU | CPU(확인 가능한 범위) | 운영체제 | 브라우저 | 전원 상태
+| - | - | - | - | - | - |
+| MacBook Pro 14 | Apple M2 Pro 19-Core GPU | Apple M2 Pro | macOS Tahoe (버전 26.6.2) | 사파리 | 59% (배터리 사용중)
+| iPhone 15 Pro | 정확한 GPU명 미확인, GPU Benchmark Score: 24346 | Apple A17 @ 3.78 GHz | iOS 26.2.2 | 사파리 | 31% (배터리 사용중)
+
+### 공통 조건 비교
+
+*MacBook Pro 14 측정 결과*
+
+| 방식 | 1회차 중앙값 | 1회차 Local 대비 | 2회차 중앙값 | 2회차 Local 대비 | 3회차 중앙값 | 3회차 Local 대비 | 
+| - | - | - | - | - | - | - | 
+| Local | 1.00 ms | 1.0배 | 1.00 ms | 1.0배 | 1.00 ms | 1.0배 | 
+| Ray tracing | 1.00 ms | 1.0배 | 1.00 ms | 1.0배 | 1.00 ms | 1.0배 | 
+| Path tracing | 8.00 ms | 8.0배 | 6.00 ms | 6.0배 | 5.00 ms | 5.0배 | 
+
+
+*iPhone 15 Pro 측정 결과*
+| 방식 | 1회차 중앙값 | 1회차 Local 대비 | 2회차 중앙값 | 2회차 Local 대비 | 3회차 중앙값 | 3회차 Local 대비 | 
+| - | - | - | - | - | - | - | 
+| Local | 1.00 ms | 1.0배 | 1.00 ms | 1.0배 | 2.00 ms | 2.0배 | 
+| Ray tracing | 2.00 ms | 2.0배 | 2.00 ms | 2.0배 | 2.00 ms | 1.0배 | 
+| Path tracing | 7.00 ms | 7.0배 | 8.00 ms | 8.0배 | 7.00 ms | 3.5배 | 
