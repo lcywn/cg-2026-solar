@@ -78,7 +78,25 @@
 
   // TODO 3: 별의 직접광과 그림자 광선으로 색을 계산한다.
   vec3 shade(vec3 ro,vec3 rd,float t,int id){
+    //return surfaceColor(id,ro+t*rd); // 시작 상태: 교차가 구현되면 평평한 색만 표시
+    if(id==0)return uColors[0];
     return surfaceColor(id,ro+t*rd); // 시작 상태: 교차가 구현되면 평평한 색만 표시
+    vec3 p=ro+t*rd;
+    vec3 N=id==3?vec3(0.0,1.0,0.0):id==4?vec3(0.0,0.0,1.0):normalize(p-uBodies[id].xyz);
+    vec3 toStar=uBodies[0].xyz-p;
+    float lightDistance=length(toStar);
+    vec3 L=toStar/lightDistance;
+    float visible=1.0;
+    if(uShadow==1){
+     int blockerId;
+      float blockerT=traceScene(p+N*0.004,L,blockerId);
+      if(blockerId>0&&blockerT<lightDistance-0.004)visible=0.0;
+    }
+    float diffuse=max(dot(N,L),0.0);
+    float power=4.0/(1.0+0.18*lightDistance*lightDistance);
+    float ambient=id==2?0.13:0.045;
+    return surfaceColor(id,p)*(ambient+visible*diffuse*power);
+
   }
 
   vec3 displayColor(vec3 c){return pow(c/(1.0+c),vec3(1.0/2.2));}
