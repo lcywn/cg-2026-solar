@@ -80,7 +80,7 @@
   vec3 shade(vec3 ro,vec3 rd,float t,int id){
     //return surfaceColor(id,ro+t*rd); // 시작 상태: 교차가 구현되면 평평한 색만 표시
     if(id==0)return uColors[0];
-    return surfaceColor(id,ro+t*rd); // 시작 상태: 교차가 구현되면 평평한 색만 표시
+    //return surfaceColor(id,ro+t*rd); // 시작 상태: 교차가 구현되면 평평한 색만 표시
     vec3 p=ro+t*rd;
     vec3 N=id==3?vec3(0.0,1.0,0.0):id==4?vec3(0.0,0.0,1.0):normalize(p-uBodies[id].xyz);
     vec3 toStar=uBodies[0].xyz-p;
