@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>7주차 실습 2 · local / ray tracing / path tracing 성능 비교</title>
+<link rel="stylesheet" href="demo.css">
+<style>
+.wrap{grid-template-columns:minmax(0,1fr) 19rem;height:100vh;height:100dvh}
+.stage{display:flex;align-items:center;justify-content:center;min-height:300px;background:#101722}
+.stage canvas{width:min(100%,calc(100vh * 1.75));height:auto;aspect-ratio:16/9;max-width:none;max-height:none}
+.panel{overflow-y:auto}.actions{display:flex;gap:.5rem;margin:1rem 0}.actions button{flex:1}
+.result{font-size:.82rem}.result table{width:100%;border-collapse:collapse}.result th,.result td{padding:.32rem;border-bottom:1px solid #ccd4dc;text-align:left}
+@media(max-width:800px){.wrap{display:block;height:auto}.stage{height:auto;min-height:0;padding:.5rem}.panel{max-height:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="stage"><canvas id="cv" width="320" height="180" aria-label="같은 3D 방을 local, ray tracing, path tracing으로 그린 결과"></canvas></div>
+  <aside class="panel">
+    <h1>세 렌더링 방식 비교</h1>
+    <p class="sub">GitHub Pages에 배포한 주소를 각 기기에서 열어 측정하세요. 거울·유리·환경 반사를 켜고 해상도·표본·반사 횟수를 높여 성능 한계를 찾아보세요.</p>
+    <p id="profile" class="note" aria-live="polite"></p>
+    <div id="ui"></div>
+    <div class="actions"><button id="measure" type="button">세 방식 측정</button></div>
+    <p id="status" role="status"></p>
+    <div id="result" class="result" aria-live="polite"></div>
+    <p class="note">지원 브라우저에서는 WebGL GPU 타이머로 그리기 명령의 실행 시간을 잽니다. 미지원 기기에서는 동기화 포함 경과 시간을 표시합니다. 측정 종류가 다르면 수치를 직접 비교하지 마세요. 고부하 설정은 낮은 값부터 한 단계씩 올리세요.</p>
+  </aside>
+</div>
+<script src="demo.js"></script>
+<script src="task2.js"></script>
+</body>
+</html>
