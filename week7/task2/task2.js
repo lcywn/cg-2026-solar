@@ -28,10 +28,7 @@
     {id:'bounces',type:'select',label:'Path 최대 반사',value:'2',options:[
       {value:'1',label:'1회'}, {value:'2',label:'2회'}, {value:'3',label:'3회'}, {value:'4',label:'4회'}]},
     {id:'advanced',type:'check',label:'거울·굴절·환경 반사',value:true}
-  ],(values)=>{
-    saveProfile(values);
-    showProfile(values);
-  });
+  ],showProfile);
   function detectDeviceType(){
     if(typeof navigator.userAgentData?.mobile==='boolean'){
       return navigator.userAgentData.mobile?'mobile':'desktop';
@@ -42,47 +39,37 @@
     if(/Windows|Macintosh|Linux|CrOS/i.test(ua))return 'desktop';
     return matchMedia('(pointer:coarse)').matches?'mobile':'desktop';
   }
-  function validProfile(profile){
-    if(!profile||typeof profile!=='object'||typeof profile.advanced!=='boolean')return false;
-    return profileFields.filter(id=>id!=='advanced').every(id=>{
-      const select=document.querySelector(`#ui .ctl[data-id="${id}"] select`);
-      return typeof profile[id]==='string'&&[...select.options].some(option=>option.value===profile[id]);
-    });
-  }
-  function saveProfile(values){
-    const profile=Object.fromEntries(profileFields.map(id=>[id,values[id]]));
-    try{
-      localStorage.setItem(storageKey,JSON.stringify(profile));
-      storageWarning='';
-    }catch(error){
-      console.error('기기별 설정을 저장하지 못했습니다.',error);
-      storageWarning='설정을 저장할 수 없어 새로고침 후 복원되지 않을 수 있습니다.';
-    }
-  }
   function loadProfile(){
+    try{
+      localStorage.setItem(storageKey,JSON.stringify(defaults));
+    }catch(error){
+      console.error('기기별 기본 설정을 저장하지 못했습니다.',error);
+      storageWarning='기본 설정을 저장할 수 없어 현재 페이지에서만 기본값을 적용합니다.';
+      return defaults;
+    }
     let stored;
     try{
       stored=localStorage.getItem(storageKey);
     }catch(error){
-      console.error('기기별 설정을 불러오지 못했습니다.',error);
-      storageWarning='저장된 설정을 불러올 수 없어 기본값을 사용합니다.';
+      console.error('기기별 기본 설정을 불러오지 못했습니다.',error);
+      storageWarning='저장된 기본 설정을 불러올 수 없어 기본값을 적용합니다.';
       return defaults;
     }
-    if(stored!==null){
-      try{
-        const profile=JSON.parse(stored);
-        if(validProfile(profile))return profile;
-        console.error('저장된 기기별 설정이 유효하지 않습니다.');
-      }catch(error){
-        if(!(error instanceof SyntaxError))throw error;
-        console.error('저장된 기기별 설정을 해석하지 못했습니다.',error);
-      }
-      saveProfile(defaults);
-      storageWarning='저장된 설정이 올바르지 않아 기본값으로 초기화했습니다.'+(storageWarning?` ${storageWarning}`:'');
+    let profile;
+    try{
+      profile=JSON.parse(stored);
+    }catch(error){
+      if(!(error instanceof SyntaxError))throw error;
+      console.error('저장된 기본 설정을 해석하지 못했습니다.',error);
+      storageWarning='저장된 기본 설정이 올바르지 않아 기본값을 적용합니다.';
       return defaults;
     }
-    saveProfile(defaults);
-    return defaults;
+    if(!profile||profileFields.some(id=>profile[id]!==defaults[id])){
+      console.error('저장된 기기별 기본 설정이 유효하지 않습니다.');
+      storageWarning='저장된 기본 설정이 올바르지 않아 기본값을 적용합니다.';
+      return defaults;
+    }
+    return profile;
   }
   function showProfile(values){
     profileInfo.textContent=`${deviceType==='mobile'?'모바일':'데스크톱'} 설정 · ${values.resolution}×${Number(values.resolution)*9/16} · ${values.samples}표본 · ${values.bounces}회 반사 · 고급 효과 ${values.advanced?'켬':'끔'}${storageWarning?` · ${storageWarning}`:''}`;
@@ -364,4 +351,3 @@
     result.textContent='설정이 바뀌었습니다. 「세 방식 측정」을 눌러 같은 조건의 값을 다시 구하세요.';
   });
 })();
-
