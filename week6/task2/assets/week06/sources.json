@@ -1,0 +1,72 @@
+[
+  {
+    "file": "wood_planks_Diffuse.jpg",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_planks/wood_planks_diff_1k.jpg",
+    "asset": "https://polyhaven.com/a/wood_planks",
+    "license": "CC0-1.0",
+    "processing": "resized JPEG preview"
+  },
+  {
+    "file": "wood_planks_nor_gl.jpg",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/wood_planks/wood_planks_nor_gl_1k.jpg",
+    "asset": "https://polyhaven.com/a/wood_planks",
+    "license": "CC0-1.0",
+    "processing": "resized JPEG preview"
+  },
+  {
+    "file": "wood_planks_arm.png",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/wood_planks/wood_planks_arm_1k.png",
+    "asset": "https://polyhaven.com/a/wood_planks",
+    "license": "CC0-1.0",
+    "processing": "resized PNG data map"
+  },
+  {
+    "file": "rusty_metal_04_Diffuse.jpg",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rusty_metal_04/rusty_metal_04_diff_1k.jpg",
+    "asset": "https://polyhaven.com/a/rusty_metal_04",
+    "license": "CC0-1.0",
+    "processing": "resized JPEG preview"
+  },
+  {
+    "file": "rusty_metal_04_nor_gl.jpg",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rusty_metal_04/rusty_metal_04_nor_gl_1k.jpg",
+    "asset": "https://polyhaven.com/a/rusty_metal_04",
+    "license": "CC0-1.0",
+    "processing": "resized JPEG preview"
+  },
+  {
+    "file": "rusty_metal_04_arm.png",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/rusty_metal_04/rusty_metal_04_arm_1k.png",
+    "asset": "https://polyhaven.com/a/rusty_metal_04",
+    "license": "CC0-1.0",
+    "processing": "resized PNG data map"
+  },
+  {
+    "file": "rock_boulder_dry_Diffuse.jpg",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rock_boulder_dry/rock_boulder_dry_diff_1k.jpg",
+    "asset": "https://polyhaven.com/a/rock_boulder_dry",
+    "license": "CC0-1.0",
+    "processing": "resized JPEG preview"
+  },
+  {
+    "file": "rock_boulder_dry_nor_gl.jpg",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rock_boulder_dry/rock_boulder_dry_nor_gl_1k.jpg",
+    "asset": "https://polyhaven.com/a/rock_boulder_dry",
+    "license": "CC0-1.0",
+    "processing": "resized JPEG preview"
+  },
+  {
+    "file": "rock_boulder_dry_arm.png",
+    "source": "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/rock_boulder_dry/rock_boulder_dry_arm_1k.png",
+    "asset": "https://polyhaven.com/a/rock_boulder_dry",
+    "license": "CC0-1.0",
+    "processing": "resized PNG data map"
+  },
+  {
+    "file": "studio_small_09_tonemapped.jpg",
+    "source": "https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/studio_small_09.jpg",
+    "asset": "https://polyhaven.com/a/studio_small_09",
+    "license": "CC0-1.0",
+    "processing": "resized JPEG preview"
+  }
+]
