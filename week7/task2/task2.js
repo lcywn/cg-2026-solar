@@ -19,22 +19,67 @@
     {id:'bounces',type:'select',label:'Path 최대 반사',value:'2',options:[
       {value:'1',label:'1회'}, {value:'2',label:'2회'}, {value:'3',label:'3회'}, {value:'4',label:'4회'}]},
     {id:'advanced',type:'check',label:'거울·굴절·환경 반사',value:true}
-  ]);
-  // TODO (실습 2): 여러 실제 기기의 측정 결과를 바탕으로 이 자동 선택 규칙을 수정한다.
-  // PC/노트북 구분은 브라우저가 보장하지 않으므로 저장한 기기별 설정이나 간단한 벤치마크를 활용할 수 있다.
+  ],()=>{
+    storageNotice='';
+    saveProfile();
+    showProfile();
+  });
+  const storageKey='week7.task2.profile';
+  const selectIds=['mode','resolution','samples','bounces'];
+  const profile=document.querySelector('#profile');
+  let storageNotice='';
   function chooseInitialProfile(){
-    const mobile=navigator.userAgentData?.mobile || matchMedia('(pointer:coarse)').matches;
-    return mobile?{name:'모바일 기본값',resolution:'320',samples:'4',bounces:'1',advanced:false}
-                 :{name:'데스크톱 기본값',resolution:'640',samples:'8',bounces:'2',advanced:true};
+    const mobile=navigator.userAgentData?.mobile ??
+      /iPhone|iPod|Android.*Mobile|Windows Phone/i.test(navigator.userAgent);
+    const defaults=mobile?{mode:'2',resolution:'960',samples:'8',bounces:'1',advanced:true}
+                         :{mode:'2',resolution:'1920',samples:'32',bounces:'4',advanced:true};
+    let saved;
+    try{
+      saved=localStorage.getItem(storageKey);
+    }catch(error){
+      storageNotice='브라우저 저장소를 읽을 수 없어 기본값을 사용합니다.';
+      return defaults;
+    }
+    if(saved===null)return defaults;
+    let settings;
+    try{
+      settings=JSON.parse(saved);
+    }catch(error){
+      storageNotice='저장된 설정을 읽을 수 없어 기본값을 사용합니다.';
+      return defaults;
+    }
+    const valid=settings&&typeof settings==='object'&&typeof settings.advanced==='boolean'&&
+      selectIds.every(id=>{
+        const select=document.querySelector(`#ui .ctl[data-id="${id}"] select`);
+        return typeof settings[id]==='string'&&[...select.options].some(option=>option.value===settings[id]);
+      });
+    if(!valid){
+      storageNotice='저장된 설정이 올바르지 않아 기본값을 사용합니다.';
+      return defaults;
+    }
+    return settings;
+  }
+  function saveProfile(){
+    const settings={mode:S.mode,resolution:S.resolution,samples:S.samples,bounces:S.bounces,advanced:S.advanced};
+    try{
+      localStorage.setItem(storageKey,JSON.stringify(settings));
+    }catch(error){
+      storageNotice='브라우저 저장소에 설정을 저장할 수 없어 새로고침 후 유지되지 않을 수 있습니다.';
+    }
+  }
+  function showProfile(){
+    const modeNames=['Local','Ray tracing','Path tracing'];
+    profile.textContent=`적용된 설정: ${modeNames[Number(S.mode)]} · ${S.resolution}×${Number(S.resolution)*9/16} · ${S.samples}표본 · ${S.bounces}회 반사 · 고급 효과 ${S.advanced?'켬':'끔'}${storageNotice?' · '+storageNotice:''}`;
   }
   const initialProfile=chooseInitialProfile();
-  for(const id of ['resolution','samples','bounces']){
+  for(const id of selectIds){
     S[id]=initialProfile[id];
     document.querySelector(`#ui .ctl[data-id="${id}"] select`).value=S[id];
   }
   S.advanced=initialProfile.advanced;
   document.querySelector('#ui .ctl[data-id="advanced"] input').checked=S.advanced;
-  document.querySelector('#profile').textContent=`자동 시작 설정: ${initialProfile.name} · ${S.resolution}×${Number(S.resolution)*9/16} · ${S.samples}표본 · ${S.bounces}회 반사 · 고급 효과 ${S.advanced?'켬':'끔'}`;
+  saveProfile();
+  showProfile();
   const rasterVS=`#version 300 es
   layout(location=0) in vec3 aPos;
   layout(location=1) in vec3 aNormal;
