@@ -8,11 +8,11 @@
   const profileInfo=document.querySelector('#profile');
   const profileFields=['mode','resolution','samples','bounces','advanced'];
   const deviceType=detectDeviceType();
-  const storageKey=`week7.task2.profile.${deviceType}`;
+  const manualStorageKey='week7.task2.manualStorage';
   const defaults=deviceType==='mobile'
     ?{mode:'0',resolution:'960',samples:'8',bounces:'1',advanced:true}
     :{mode:'0',resolution:'1920',samples:'32',bounces:'4',advanced:true};
-  let storageWarning='';
+  let profileMessage='';
   const S=D.UI('#ui',[
     {id:'mode',type:'select',label:'화면',value:'0',options:[
       {value:'0',label:'① Local: 삼각형 + 직접광'},
@@ -28,7 +28,10 @@
     {id:'bounces',type:'select',label:'Path 최대 반사',value:'2',options:[
       {value:'1',label:'1회'}, {value:'2',label:'2회'}, {value:'3',label:'3회'}, {value:'4',label:'4회'}]},
     {id:'advanced',type:'check',label:'거울·굴절·환경 반사',value:true}
-  ],showProfile);
+  ],values=>{
+    profileMessage='';
+    showProfile(values);
+  });
   function detectDeviceType(){
     if(typeof navigator.userAgentData?.mobile==='boolean'){
       return navigator.userAgentData.mobile?'mobile':'desktop';
@@ -39,49 +42,123 @@
     if(/Windows|Macintosh|Linux|CrOS/i.test(ua))return 'desktop';
     return matchMedia('(pointer:coarse)').matches?'mobile':'desktop';
   }
-  function loadProfile(){
+  function validProfile(profile){
+    return !!profile&&typeof profile==='object'&&!profileFields.some(id=>{
+      if(id==='advanced')return typeof profile[id]!=='boolean';
+      const control=document.querySelector(`#ui .ctl[data-id="${id}"] select`);
+      return typeof profile[id]!=='string'||![...control.options].some(option=>option.value===profile[id]);
+    });
+  }
+  function saveState(state){
     try{
-      localStorage.setItem(storageKey,JSON.stringify(defaults));
+      localStorage.setItem(manualStorageKey,JSON.stringify(state));
+      return true;
     }catch(error){
-      console.error('기기별 기본 설정을 저장하지 못했습니다.',error);
-      storageWarning='기본 설정을 저장할 수 없어 현재 페이지에서만 기본값을 적용합니다.';
-      return defaults;
+      console.error('설정을 저장하지 못했습니다.',error);
+      profileMessage='설정을 저장할 수 없습니다.';
+      return false;
     }
+  }
+  function loadState(){
     let stored;
     try{
-      stored=localStorage.getItem(storageKey);
+      stored=localStorage.getItem(manualStorageKey);
     }catch(error){
-      console.error('기기별 기본 설정을 불러오지 못했습니다.',error);
-      storageWarning='저장된 기본 설정을 불러올 수 없어 기본값을 적용합니다.';
-      return defaults;
+      console.error('저장된 설정을 불러오지 못했습니다.',error);
+      profileMessage='저장된 설정을 불러올 수 없습니다.';
+      return null;
     }
-    let profile;
+    if(stored===null){
+      let legacy;
+      try{
+        legacy=sessionStorage.getItem(manualStorageKey);
+      }catch(error){
+        console.error('이전 세션의 설정을 불러오지 못했습니다.',error);
+        profileMessage='이전 세션의 설정을 불러올 수 없습니다.';
+        return null;
+      }
+      if(legacy===null)return {profile:null,useSaved:false};
+      let profile;
+      try{
+        profile=JSON.parse(legacy);
+      }catch(error){
+        if(!(error instanceof SyntaxError))throw error;
+        console.error('이전 세션의 설정을 해석하지 못했습니다.',error);
+        profileMessage='이전 세션의 설정이 올바르지 않습니다.';
+        return null;
+      }
+      if(!validProfile(profile)){
+        console.error('이전 세션의 설정이 유효하지 않습니다.');
+        profileMessage='이전 세션의 설정이 올바르지 않습니다.';
+        return null;
+      }
+      const state={profile,useSaved:true};
+      if(!saveState(state))return null;
+      try{
+        sessionStorage.removeItem(manualStorageKey);
+      }catch(error){
+        console.error('이전 세션 설정을 삭제하지 못했습니다.',error);
+        profileMessage='이전 세션 설정을 삭제할 수 없습니다.';
+      }
+      return state;
+    }
+    let state;
     try{
-      profile=JSON.parse(stored);
+      state=JSON.parse(stored);
     }catch(error){
       if(!(error instanceof SyntaxError))throw error;
-      console.error('저장된 기본 설정을 해석하지 못했습니다.',error);
-      storageWarning='저장된 기본 설정이 올바르지 않아 기본값을 적용합니다.';
-      return defaults;
+      console.error('저장된 설정을 해석하지 못했습니다.',error);
+      profileMessage='저장된 설정이 올바르지 않습니다.';
+      return null;
     }
-    if(!profile||profileFields.some(id=>profile[id]!==defaults[id])){
-      console.error('저장된 기기별 기본 설정이 유효하지 않습니다.');
-      storageWarning='저장된 기본 설정이 올바르지 않아 기본값을 적용합니다.';
-      return defaults;
+    if(!state||typeof state!=='object'||typeof state.useSaved!=='boolean'||
+      (state.profile!==null&&!validProfile(state.profile))||(state.useSaved&&!state.profile)){
+      console.error('저장된 설정이 유효하지 않습니다.');
+      profileMessage='저장된 설정이 올바르지 않습니다.';
+      return null;
     }
-    return profile;
+    return state;
   }
   function showProfile(values){
-    profileInfo.textContent=`${deviceType==='mobile'?'모바일':'데스크톱'} 설정 · ${values.resolution}×${Number(values.resolution)*9/16} · ${values.samples}표본 · ${values.bounces}회 반사 · 고급 효과 ${values.advanced?'켬':'끔'}${storageWarning?` · ${storageWarning}`:''}`;
+    profileInfo.textContent=`${deviceType==='mobile'?'모바일':'데스크톱'} 설정 · ${values.resolution}×${Number(values.resolution)*9/16} · ${values.samples}표본 · ${values.bounces}회 반사 · 고급 효과 ${values.advanced?'켬':'끔'}${profileMessage?` · ${profileMessage}`:''}`;
   }
-  const initialProfile=loadProfile();
-  for(const id of profileFields){
-    S[id]=initialProfile[id];
-    const control=document.querySelector(`#ui .ctl[data-id="${id}"] ${id==='advanced'?'input':'select'}`);
-    if(id==='advanced')control.checked=S[id];
-    else control.value=S[id];
+  function applyProfile(profile){
+    for(const id of profileFields){
+      S[id]=profile[id];
+      const control=document.querySelector(`#ui .ctl[data-id="${id}"] ${id==='advanced'?'input':'select'}`);
+      if(id==='advanced')control.checked=S[id];
+      else control.value=S[id];
+    }
+    showProfile(S);
   }
-  showProfile(S);
+  const initialState=loadState();
+  if(initialState?.useSaved&&!profileMessage)profileMessage='설정값 불러오기 완료';
+  applyProfile(initialState?.useSaved?initialState.profile:defaults);
+  document.querySelector('#save-settings').addEventListener('click',()=>{
+    const profile=Object.fromEntries(profileFields.map(id=>[id,S[id]]));
+    profileMessage='';
+    if(saveState({profile,useSaved:true}))profileMessage='설정 저장 완료';
+    showProfile(S);
+  });
+  document.querySelector('#restore-settings').addEventListener('click',()=>{
+    profileMessage='';
+    const state=loadState();
+    if(state?.profile){
+      if(saveState({...state,useSaved:true}))profileMessage='설정값 불러오기 완료';
+      else profileMessage='설정은 적용했지만 다음 시작 설정을 저장할 수 없습니다.';
+      applyProfile(state.profile);
+    }else{
+      if(!profileMessage)profileMessage='저장된 설정이 없습니다.';
+      showProfile(S);
+    }
+  });
+  document.querySelector('#reset-settings').addEventListener('click',()=>{
+    profileMessage='';
+    const state=loadState();
+    if(state&&saveState({...state,useSaved:false}))profileMessage='기본 설정으로 되돌렸습니다.';
+    else profileMessage=`기본 설정은 적용했지만 다음 시작 설정을 저장할 수 없습니다. ${profileMessage}`;
+    applyProfile(defaults);
+  });
   const rasterVS=`#version 300 es
   layout(location=0) in vec3 aPos;
   layout(location=1) in vec3 aNormal;
@@ -319,7 +396,7 @@
   async function measure(){
     if(measuring)return;measuring=true;
     const button=document.querySelector('#measure');button.disabled=true;
-    const controls=[...document.querySelectorAll('#ui input,#ui select')];
+    const controls=[...document.querySelectorAll('#ui input,#ui select,#save-settings,#restore-settings,#reset-settings')];
     controls.forEach(control=>{control.disabled=true;});
     result.textContent='같은 설정에서 방식별 1회 준비 + 5회 측정 중…';
     try{
@@ -351,4 +428,3 @@
     result.textContent='설정이 바뀌었습니다. 「세 방식 측정」을 눌러 같은 조건의 값을 다시 구하세요.';
   });
 })();
-// branch merge
