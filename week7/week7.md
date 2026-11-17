@@ -23,10 +23,10 @@ Step3 - 직접광과 식의 그림자
 
 - **1의 일식·월식 캡처 공전**
 일식
-![Task 2 결과](week7_task1_s.png)
+![Task 2 결과](images/week7_task1_s.png)
 
 월식
-![Task 2 결과](week7_task1_m.png)
+![Task 2 결과](images/week7_task1_m.png)
 
 
 - **위치·그림자 광선의 역할**
