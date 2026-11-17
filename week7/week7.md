@@ -193,8 +193,8 @@ task1은 화면의 각 픽셀에서 가상의 카메라 광선을 쏘아 3D 공�
 
 
 캡처를 위해 컴퓨터로 재측정한 결과 다음과 같이 나와 해상도의 차이가 큼을 다시 확인하였습니다. 
-![Task 2 결과](week7_task1_step3_1.png)
-![Task 2 결과](week7_task1_step3_2png)
+![Task 2 결과](images/week7_task1_step3_1.png)
+![Task 2 결과](images/week7_task1_step3_2png)
 
 
 - **각 기기의 적정 설정과 허용 시간 기준은 무엇인가요?**
