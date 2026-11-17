@@ -31,8 +31,7 @@ vec3 linearToSrgb(vec3 c){
 // TODO 2: D(GGX), F(Schlick), G(Smith-Schlick)를 계산해
 // 직접광 PBR 결과를 반환하세요. 6주차 3-2절을 참고하세요.
 vec3 directPBR(vec3 N,vec3 V,vec3 L,vec3 base,float rough,float metal){
-  // TODO 2: 이 줄을 교체
-  vec3 H = normalize(V + L);
+ vec3 H = normalize(V + L);
  float nl = max(dot(N,L),0.0), nv = max(dot(N,V),0.0);
  float nh = max(dot(N,H),0.0), vh = max(dot(V,H),0.0);
  float a = rough*rough, a2 = a*a;
@@ -50,29 +49,58 @@ vec3 directPBR(vec3 N,vec3 V,vec3 L,vec3 base,float rough,float metal){
 void main(){
  vec3 N=normalize(vN),V=normalize(uEye-vP),L=normalize(uLight);
  vec3 base=uTint;
-
- // TODO 1: texture(uColor,vUV).rgb를 읽어 선형화하고 base에 사용하세요.
- // 수치 맵에는 sRGB 변환을 적용하지 마세요.
+ // TODO 1: 
  base = srgbToLinear(texture(uColor, vUV).rgb) * uTint;
 
+
  float rough=uRough,metal=uMetal,ao=1.0;
+ 
  // TODO 3: uARM의 R(AO), G(roughness), B(metallic)를 읽으세요.
  // 슬라이더 uRough/uMetal은 맵 값에 곱하는 배율입니다.
+ vec3 arm = texture(uARM, vUV).rgb;
+ ao = arm.r;
+ rough = max(arm.g*uRough, 0.045);
+ metal = arm.b*uMetal;
+
 
  // TODO 4: uNormal에서 접선 공간 법선을 읽고 N을 바꾸세요.
  // vP와 vUV의 dFdx/dFdy로 TBN을 만들어도 됩니다.
  // uNormalStrength=0이면 기하 법선을 그대로 사용하세요.
+ if (uNormalStrength > 0.0) {
+  vec3 dp1=dFdx(vP), dp2=dFdy(vP);
+  vec2 du1=dFdx(vUV), du2=dFdy(vUV);
+  vec3 T=cross(dp2,N)*du1.x+cross(N,dp1)*du2.x;
+  vec3 B=cross(dp2,N)*du1.y+cross(N,dp1)*du2.y;
+  //float inv=inversesqrt(max(max(dot(T,T),dot(B,B)),1e-8));
+  float inv=inversesqrt(max(max(dot(T,T),dot(B,B)),1e-20));
+  vec3 mapN=texture(uNormal,vUV).xyz*2.0-1.0;
+  mapN.xy *= uNormalStrength;
+  N=normalize(mat3(T*inv,B*inv,N)*normalize(mapN));
+ }
 
+ /*
  float nl=max(dot(N,L),0.0);
  vec3 R=reflect(-L,N);
  vec3 color=base*(uAmbient+uPower*nl)
            +vec3(0.6)*uPower*pow(max(dot(R,V),0.0),32.0)*step(0.0001,nl);
+*/
+ vec3 color = directPBR(N,V,L,base,rough,metal);
+ vec3 F0 = mix(vec3(0.04),base,metal);
+ color += uAmbient * ao * (base*(1.0-metal)*(1.0-F0)+F0);
+
  // TODO 2: 위의 Phong 두 줄을 directPBR(...) 호출과 ambient로 교체하세요.
  // 환경맵을 끄고 uAmbient=0일 때 직접광만 비교해 보세요.
 
  // TODO 5: 환경 파노라마를 reflect(-V,N) 방향으로 조회해 반사를 더하세요.
  // 금속에서 정반사색은 base, 유전체의 정면 반사율은 약 0.04입니다.
  // 이미지 밝기 uEnvPower와 상수 ambient uAmbient는 별개로 유지하세요.
+ vec3 reflected = reflect(-V,N);
+ vec2 envUV = vec2(atan(reflected.z,reflected.x)/(2.0*PI)+0.5,
+                  asin(clamp(reflected.y,-1.0,1.0))/PI+0.5);
+ vec3 envColor = srgbToLinear(textureLod(uEnv,envUV,rough*7.0).rgb);
+ vec3 envF0 = mix(vec3(0.04),base,metal);
+ color += uEnvPower * ao * envColor * envF0;
+
 
  color=max(color,vec3(0.0));
  color=color/(1.0+color); // HDR → 표시 범위
