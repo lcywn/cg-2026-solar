@@ -1,10 +1,8 @@
-
 /* 6주차 실습 1 시작 코드. TODO 1~5를 직접 작성하여 완성하세요.
  * 비교 예제 d06-materials.js는 정답을 확인하는 참고 자료입니다.
  * Copilot에 각 TODO와 week06.md 수식을 읽히고 코드를 제안받아도 됩니다.
  * 각 단계에서 무엇이 왜 달라졌는지 직접 화면으로 검증하세요.
  */
-
 (() => {
 'use strict';
 const cv=document.querySelector('#cv'), gl=D.context(cv); if(!gl)return;
@@ -33,42 +31,37 @@ vec3 linearToSrgb(vec3 c){
 // TODO 2: D(GGX), F(Schlick), G(Smith-Schlick)를 계산해
 // 직접광 PBR 결과를 반환하세요. 6주차 3-2절을 참고하세요.
 vec3 directPBR(vec3 N,vec3 V,vec3 L,vec3 base,float rough,float metal){
- // TODO 2: 이 줄을 교체
  vec3 H = normalize(V + L);
  float nl = max(dot(N,L),0.0), nv = max(dot(N,V),0.0);
  float nh = max(dot(N,H),0.0), vh = max(dot(V,H),0.0);
  float a = rough*rough, a2 = a*a;
  float den = nh*nh*(a2-1.0)+1.0;
- float D = a2 / max(PI*den*den, 1e-6); //법선분포 D
+ float D = a2 / max(PI*den*den, 1e-6);
  float k = (rough+1.0)*(rough+1.0)/8.0;
-
- float G = (nl/(nl*(1.0-k)+k)) * (nv/(nv*(1.0-k)+k)); //masking / shadowing G
+ float G = (nl/(nl*(1.0-k)+k)) * (nv/(nv*(1.0-k)+k));
  vec3 F0 = mix(vec3(0.04), base, metal);
-
- vec3 F = F0 + (1.0-F0)*pow(1.0-vh,5.0); //Fresnel F
+ vec3 F = F0 + (1.0-F0)*pow(1.0-vh,5.0);
  vec3 kd = (1.0-F)*(1.0-metal);
  return (kd*base/PI + D*G*F/max(4.0*nl*nv,1e-4))*nl*uPower;
- 
+
 }
 
 void main(){
  vec3 N=normalize(vN),V=normalize(uEye-vP),L=normalize(uLight);
  vec3 base=uTint;
- 
-// TODO 1: texture(uColor,vUV).rgb를 읽어 선형화하고 base에 사용하세요.
+ // TODO 1: 
  base = srgbToLinear(texture(uColor, vUV).rgb) * uTint;
 
- // 수치 맵에는 sRGB 변환을 적용하지 마세요.
 
  float rough=uRough,metal=uMetal,ao=1.0;
  
  // TODO 3: uARM의 R(AO), G(roughness), B(metallic)를 읽으세요.
+ // 슬라이더 uRough/uMetal은 맵 값에 곱하는 배율입니다.
  vec3 arm = texture(uARM, vUV).rgb;
  ao = arm.r;
  rough = max(arm.g*uRough, 0.045);
- metal = arm.b*uMetal; 
+ metal = arm.b*uMetal;
 
- // 슬라이더 uRough/uMetal은 맵 값에 곱하는 배율입니다.
 
  // TODO 4: uNormal에서 접선 공간 법선을 읽고 N을 바꾸세요.
  // vP와 vUV의 dFdx/dFdy로 TBN을 만들어도 됩니다.
@@ -78,23 +71,21 @@ void main(){
   vec2 du1=dFdx(vUV), du2=dFdy(vUV);
   vec3 T=cross(dp2,N)*du1.x+cross(N,dp1)*du2.x;
   vec3 B=cross(dp2,N)*du1.y+cross(N,dp1)*du2.y;
-  float inv=inversesqrt(max(max(dot(T,T),dot(B,B)),1e-8));
+  //float inv=inversesqrt(max(max(dot(T,T),dot(B,B)),1e-8));
+  float inv=inversesqrt(max(max(dot(T,T),dot(B,B)),1e-20));
   vec3 mapN=texture(uNormal,vUV).xyz*2.0-1.0;
   mapN.xy *= uNormalStrength;
   N=normalize(mat3(T*inv,B*inv,N)*normalize(mapN));
-}
+ }
 
-
- /* Task2를 위한 삭제
+ /*
  float nl=max(dot(N,L),0.0);
  vec3 R=reflect(-L,N);
  vec3 color=base*(uAmbient+uPower*nl)
            +vec3(0.6)*uPower*pow(max(dot(R,V),0.0),32.0)*step(0.0001,nl);
 */
-
  vec3 color = directPBR(N,V,L,base,rough,metal);
  vec3 F0 = mix(vec3(0.04),base,metal);
-//uAmbient = 0.0; // TODO 2: 직접광만 비교할 때는 uAmbient=0으로 설정
  color += uAmbient * ao * (base*(1.0-metal)*(1.0-F0)+F0);
 
  // TODO 2: 위의 Phong 두 줄을 directPBR(...) 호출과 ambient로 교체하세요.
