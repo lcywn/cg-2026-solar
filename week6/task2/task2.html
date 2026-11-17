@@ -1,3 +1,59 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>실습 1 · 단계별 재질 만들기</title><link rel="stylesheet" href="demo.css"><style>
-.wrap{grid-template-columns:minmax(0,1fr) 20rem;height:100vh;height:100dvh}.stage{position:relative;display:block;min-height:320px}.stage canvas{position:absolute;inset:0;width:100%;height:100%;max-height:none;max-width:none;touch-action:none}.labels{position:absolute;inset:0;display:grid;pointer-events:none}.labels span{padding:9px;font-size:12px;border:1px solid var(--d-line);color:var(--d-ink)}.labels b{background:var(--d-bg);padding:3px 5px;border-radius:4px}#status{font-size:12px}.ctl.unavailable{opacity:.45}.ctl.unavailable input,.ctl.unavailable select{cursor:not-allowed}button{padding:8px}.gallery-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.gallery-grid button{padding:2px;border:1px solid var(--d-line);background:var(--d-bg);color:var(--d-ink);cursor:zoom-in;font-size:10px;line-height:1.2}.gallery-grid img{display:block;width:100%;aspect-ratio:1;object-fit:cover}.gallery-grid span{display:block;padding:3px}#texture-dialog{border:1px solid var(--d-line-strong);border-radius:8px;max-width:min(90vw,700px);background:var(--d-bg);color:var(--d-ink)}#texture-dialog img{display:block;max-width:100%;max-height:70vh;margin:auto} @media(max-width:800px){.wrap{display:block;height:auto}.stage{height:80vh;height:80dvh;min-height:420px}.panel{max-height:none}}
-</style></head><body><div class="wrap"><div class="stage"><canvas id="cv" aria-label="드래그로 회전하고 휠로 확대하는 3D 재질 비교" tabindex="0"></canvas><div class="labels" id="labels"></div></div><aside class="panel"><h1>실습 1 · 단계별 재질 만들기</h1><p class="sub">회색 큐브에서 시작해 task1.js의 TODO 1~5를 직접 채우세요. 드래그: 회전 · 휠: 확대</p><div id="ui"></div><button id="reset">시점 초기화</button><p id="status" role="status">텍스처 로딩 중…</p><p class="note" id="note"></p><p>텍스처: Poly Haven · CC0<br>환경 반사는 축소한 LDR 이미지와 일반 밉맵을 이용한 교육용 근사입니다. GGX 환경광 적분(IBL)은 생략합니다.</p></aside></div><script src="demo.js"></script><script src="task2.js"></script></body></html>
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>태양과 관찰 행성</title>
+  <link rel="stylesheet" href="demo.css">
+  <style>
+    html,body{margin:0;width:100%;height:100%;overflow:hidden}
+    .wrap{display:grid;grid-template-columns:minmax(0,1fr) 15rem;height:100vh;height:100dvh}
+    .stage{position:relative;display:block;min-width:0;min-height:320px;background:#05070c}
+    .stage canvas{position:absolute;inset:0;width:100%;height:100%;max-width:none;max-height:none;touch-action:none}
+    .scene-label{position:absolute;top:12px;left:12px;padding:8px 11px;border-radius:6px;background:#121b2c;color:#e8edf5;font-size:12px}
+    .panel{box-sizing:border-box;overflow:auto;padding:20px 16px;background:#fff;color:#202b3c}
+    .panel h1{margin:0 0 12px;font-size:17px}
+    .panel .sub{font-size:13px;line-height:1.6;color:#536176}
+    .panel .note{margin-top:22px;padding:10px;border:1px solid #dce3ed;border-left:3px solid #3478f6;border-radius:5px;font-size:12px;line-height:1.6;color:#435168}
+    .scene-switch{display:grid;gap:8px;margin:18px 0}
+    .scene-switch button{width:100%;padding:10px;text-align:left;border:1px solid #dce3ed;border-radius:6px;background:#fff;color:#26344a;cursor:pointer}
+    .scene-switch button[aria-pressed="true"]{border-color:#3478f6;background:#f2f6ff;box-shadow:inset 3px 0 #3478f6}
+    .scene-switch b,.scene-switch span{display:block}
+    .scene-switch span{margin-top:3px;font-size:11px;color:#66758a}
+    #status{font-size:12px;line-height:1.5;color:#536176}
+    @media(max-width:800px){
+      html,body{height:auto;min-height:100%;overflow:auto}
+      .wrap{display:block;height:auto;min-height:100vh}
+      .stage{height:68vh;height:68dvh;min-height:360px}
+      .panel{overflow:visible}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <main class="stage">
+      <canvas id="cv" aria-label="바닥과 여러 행성, 공전하는 별이 있는 장면" tabindex="0"></canvas>
+      <div class="scene-label" id="scene-label">5주차 장면 구성 · 공전하는 별과 행성들</div>
+    </main>
+    <aside class="panel">
+      <h1 id="scene-title">5주차 장면에서 출발</h1>
+      <p class="sub" id="scene-description">바닥, 중앙 행성, 공전하는 달과 주변 행성, 이동하는 발광별을 배치했습니다.</p>
+      <div class="scene-switch" role="group" aria-label="장면 선택">
+        <button type="button" data-scene="option1" aria-pressed="false">
+          <b>1안 · 태양과 행성</b>
+          <span>현재 행성 장면</span>
+        </button>
+        <button type="button" data-scene="option2" aria-pressed="true">
+          <b>2안 · 5주차 장면 구성</b>
+          <span>바닥과 여러 천체, 공전하는 별</span>
+        </button>
+      </div>
+      <p id="status" role="status">텍스처 로딩 중…</p>
+      <p class="note" id="scene-note">5주차 장면 구성을 바탕으로 행성에 PBR 재질과 normal map을 적용했습니다.</p>
+      <p class="sub">텍스처: Poly Haven · CC0</p>
+    </aside>
+  </div>
+  <script src="demo.js"></script>
+  <script src="task2.js"></script>
+</body>
+</html>
