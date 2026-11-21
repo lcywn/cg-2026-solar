@@ -36,11 +36,11 @@ vec3 directPBR(vec3 N,vec3 V,vec3 L,vec3 base,float rough,float metal){
  float nh = max(dot(N,H),0.0), vh = max(dot(V,H),0.0);
  float a = rough*rough, a2 = a*a;
  float den = nh*nh*(a2-1.0)+1.0;
- float D = a2 / max(PI*den*den, 1e-6);
+ float D = a2 / max(PI*den*den, 1e-6); //D: 미세면 법선 분포
  float k = (rough+1.0)*(rough+1.0)/8.0;
- float G = (nl/(nl*(1.0-k)+k)) * (nv/(nv*(1.0-k)+k));
+ float G = (nl/(nl*(1.0-k)+k)) * (nv/(nv*(1.0-k)+k)); //G: 미세면 가림
  vec3 F0 = mix(vec3(0.04), base, metal);
- vec3 F = F0 + (1.0-F0)*pow(1.0-vh,5.0);
+ vec3 F = F0 + (1.0-F0)*pow(1.0-vh,5.0); //F: Fresnel 반사율
  vec3 kd = (1.0-F)*(1.0-metal);
  return (kd*base/PI + D*G*F/max(4.0*nl*nv,1e-4))*nl*uPower;
 
