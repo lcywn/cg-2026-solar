@@ -37,6 +37,7 @@ uniform vec3 uEye,uLight,uLightColor,uTint;
 uniform float uRough,uMetal,uNormalStrength,uPower,uAmbient,uEnvPower;
 uniform bool uEmissive,uUseMaps;
 uniform bool uIsIcePlanet; //중앙행성이면 t, 아니면 f... 얼음행성 색변경용
+uniform bool uSurfaceChanges;
 uniform float uStarDistance;
 uniform bool uChocolateMaskView;
 uniform float uEruption;       // 카다이프 분출 강도
@@ -105,13 +106,15 @@ void main(){
 
   // 흑백 마스크 진단
   if(uChocolateMaskView){
-   outColor=vec4(vec3(chocolateMask),1.0);
+   outColor=vec4(vec3(uSurfaceChanges?chocolateMask:0.0),1.0);
    return;
   }
 
   // 색상과 roughness 변화
-  base=mix(base,vec3(0.16,0.055,0.025),chocolateMask);
-  rough=mix(rough,0.22,chocolateMask);
+  if(uSurfaceChanges){
+   base=mix(base,vec3(0.16,0.055,0.025),chocolateMask);
+   rough=mix(rough,0.22,chocolateMask);
+  }
  }
 
 
@@ -206,10 +209,11 @@ void main(){
 
   // 7. 흑백 마스크 진단
   if(uKataifiMaskView){
-    outColor=vec4(vec3(flowMask),1.0);
+    outColor=vec4(vec3(uSurfaceChanges?flowMask:0.0),1.0);
     return;
   }
 
+  if(uSurfaceChanges){
   // 8. 카다이프 PBR 재질 적용
   base=mix(base,kataifiColor,flowMask);
   rough=mix(rough,0.85,flowMask);
@@ -223,6 +227,7 @@ void main(){
   base=mix(base,rimColor,craterRim);
   base=mix(base,innerColor,craterInterior);
   rough=mix(rough,0.9,craterOuter);
+  }
  }
 
 
@@ -262,7 +267,7 @@ const U = D.uniforms(gl, prog, [
  'uVP','uModel','uEye','uLight','uLightColor','uTint',
  'uRough','uMetal','uNormalStrength','uPower','uAmbient','uEnvPower',
 // 'uEmissive','uUseMaps','uIsIcePlanet','uColor','uNormal','uARM','uEnv'
- 'uEmissive','uUseMaps','uIsIcePlanet',
+ 'uEmissive','uUseMaps','uIsIcePlanet','uSurfaceChanges',
  'uStarDistance','uChocolateMaskView',
  'uEruption','uTime','uFlowReach','uKataifiMaskView',
  'uColor','uNormal','uARM','uEnv'
@@ -319,16 +324,41 @@ Promise.all(Object.values(textures).filter(value => value instanceof Promise)).t
  }
 });
 
-const cam = D.orbit(cv,{dist:11,yaw:.6,pitch:.35,min:3,max:20});
+const initialCamera={dist:11,yaw:.6,pitch:.35};
+const cam = D.orbit(cv,{...initialCamera,min:3,max:20});
 const view=D.M4.create(),proj=D.M4.create(),vp=D.M4.create();
 const model=D.M4.create();
 const target=[0,1,0];
 const starOrbit=document.querySelector('#star-orbit');
 const moonOrbit=document.querySelector('#moon-orbit');
+const resultView=document.querySelector('#result-view');
+const motionToggle=document.querySelector('#motion-toggle');
+const surfaceToggle=document.querySelector('#surface-toggle');
+document.querySelector('#camera-reset').addEventListener('click',()=>{
+ Object.assign(cam,initialCamera);
+});
 const starDistance={min:1.18,max:5};
 const moonDistance={min:1.47,max:4.13};
 let starAngle,moonAngle;
 let flowReach=0;
+let motionPlaying=true,surfaceChanges=true;
+let simulationTime=performance.now()*.001;
+let clockUpdatedAt=simulationTime,previousFrameTime=simulationTime;
+
+function updateSimulationClock(now) {
+ if(motionPlaying) simulationTime+=now-clockUpdatedAt;
+ clockUpdatedAt=now;
+}
+
+motionToggle.addEventListener('click',()=>{
+ updateSimulationClock(performance.now()*.001);
+ motionPlaying=!motionPlaying;
+ motionToggle.textContent=motionPlaying?'모션 일시정지':'모션 재생';
+});
+surfaceToggle.addEventListener('click',()=>{
+ surfaceChanges=!surfaceChanges;
+ surfaceToggle.textContent=surfaceChanges?'기본 행성 보기':'변화한 행성 보기';
+});
 [starOrbit,moonOrbit].forEach(input=>{
  const value=document.querySelector('#'+input.id+'-value');
  const updateValue=()=>{ value.textContent=input.value; };
@@ -415,8 +445,9 @@ gl.uniform1f(U.uTime,time);
 gl.uniform1f(U.uFlowReach,flowReach);
 
 // 진단 화면 설정
-gl.uniform1i(U.uChocolateMaskView,0);
-gl.uniform1i(U.uKataifiMaskView,0);
+gl.uniform1i(U.uChocolateMaskView,resultView.value==='chocolate'?1:0);
+gl.uniform1i(U.uKataifiMaskView,resultView.value==='kataifi'?1:0);
+gl.uniform1i(U.uSurfaceChanges,surfaceChanges?1:0);
 
  if (starAngle === undefined) {
   starAngle=time*.4;
@@ -445,7 +476,10 @@ gl.uniform1i(U.uKataifiMaskView,0);
 }
 
 gl.enable(gl.DEPTH_TEST);
-D.loop((time,dt) => {
+D.loop(() => {
+ updateSimulationClock(performance.now()*.001);
+ const dt=simulationTime-previousFrameTime;
+ previousFrameTime=simulationTime;
  D.fit(cv);
  gl.viewport(0,0,cv.width,cv.height);
  gl.clearColor(.012,.018,.032,1);
@@ -463,7 +497,7 @@ D.loop((time,dt) => {
  bindTexture(textures.normal,1,'uNormal');
  bindTexture(textures.arm,2,'uARM');
  bindTexture(textures.env,3,'uEnv');
- renderScene(time,dt);
+ renderScene(simulationTime,dt);
  gl.bindVertexArray(null);
 });
 })();

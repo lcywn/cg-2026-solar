@@ -44,6 +44,17 @@
 
         <input id="moon-orbit" type="range" min="0" max="100" step="1" value="50">
       </div>
+      <div class="ctl">
+        <label for="result-view">계산 결과 보기</label>
+        <select id="result-view">
+          <option value="pbr">PBR 재질</option>
+          <option value="chocolate">초코 마스크</option>
+          <option value="kataifi">카다이프 화산 마스크</option>
+        </select>
+      </div>
+      <button class="btn" id="motion-toggle" type="button">모션 일시정지</button>
+      <button class="btn" id="surface-toggle" type="button">기본 행성 보기</button>
+      <button class="btn" id="camera-reset" type="button">시점 초기화</button>
       <p id="status" role="status" hidden></p>
     </aside>
   </div>
