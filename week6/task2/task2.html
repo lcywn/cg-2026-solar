@@ -3,54 +3,48 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>태양과 관찰 행성</title>
+  <title>6주차 task2</title>
   <link rel="stylesheet" href="demo.css">
   <style>
     html,body{margin:0;width:100%;height:100%;overflow:hidden}
     .wrap{display:grid;grid-template-columns:minmax(0,1fr) 15rem;height:100vh;height:100dvh}
     .stage{position:relative;display:block;min-width:0;min-height:320px;background:#05070c}
     .stage canvas{position:absolute;inset:0;width:100%;height:100%;max-width:none;max-height:none;touch-action:none}
-    .scene-label{position:absolute;top:12px;left:12px;padding:8px 11px;border-radius:6px;background:#121b2c;color:#e8edf5;font-size:12px}
-    .panel{box-sizing:border-box;overflow:auto;padding:20px 16px;background:#fff;color:#202b3c}
+    .panel{box-sizing:border-box;overflow:auto;padding:20px 16px 180px;background:#fff;color:#202b3c}
     .panel h1{margin:0 0 12px;font-size:17px}
-    .panel .sub{font-size:13px;line-height:1.6;color:#536176}
-    .panel .note{margin-top:22px;padding:10px;border:1px solid #dce3ed;border-left:3px solid #3478f6;border-radius:5px;font-size:12px;line-height:1.6;color:#435168}
-    .scene-switch{display:grid;gap:8px;margin:18px 0}
-    .scene-switch button{width:100%;padding:10px;text-align:left;border:1px solid #dce3ed;border-radius:6px;background:#fff;color:#26344a;cursor:pointer}
-    .scene-switch button[aria-pressed="true"]{border-color:#3478f6;background:#f2f6ff;box-shadow:inset 3px 0 #3478f6}
-    .scene-switch b,.scene-switch span{display:block}
-    .scene-switch span{margin-top:3px;font-size:11px;color:#66758a}
-    #status{font-size:12px;line-height:1.5;color:#536176}
+    .panel .sub{margin-bottom:24px;font-size:13px;line-height:1.6;color:#536176}
+    .panel .ctl{margin-bottom:20px}
+    .panel .ctl label{color:#202b3c;font-size:12px}
+    .panel .ctl .val{color:#3478f6}
+    .panel input[type="range"]{accent-color:#3478f6}
+    #status{font-size:12px;line-height:1.5;color:#b4232a}
     @media(max-width:800px){
       html,body{height:auto;min-height:100%;overflow:auto}
       .wrap{display:block;height:auto;min-height:100vh}
       .stage{height:68vh;height:68dvh;min-height:360px}
-      .panel{overflow:visible}
+      .panel{max-height:none;overflow:visible}
     }
   </style>
 </head>
 <body>
   <div class="wrap">
     <main class="stage">
-      <canvas id="cv" aria-label="바닥과 여러 행성, 공전하는 별이 있는 장면" tabindex="0"></canvas>
-      <div class="scene-label" id="scene-label">5주차 장면 구성 · 공전하는 별과 행성들</div>
+      <canvas id="cv" aria-label="중앙 행성과 공전하는 작은 행성 및 별이 있는 장면" tabindex="0"></canvas>
     </main>
     <aside class="panel">
-      <h1 id="scene-title">5주차 장면에서 출발</h1>
-      <p class="sub" id="scene-description">바닥, 중앙 행성, 공전하는 달과 주변 행성, 이동하는 발광별을 배치했습니다.</p>
-      <div class="scene-switch" role="group" aria-label="장면 선택">
-        <button type="button" data-scene="option1" aria-pressed="false">
-          <b>1안 · 태양과 행성</b>
-          <span>현재 행성 장면</span>
-        </button>
-        <button type="button" data-scene="option2" aria-pressed="true">
-          <b>2안 · 5주차 장면 구성</b>
-          <span>바닥과 여러 천체, 공전하는 별</span>
-        </button>
+      <h1>6주차 task2</h1>
+      <p class="sub">행성간 거리에 따른 화산과 얼음 변화</p>
+      <div class="ctl">
+        <label for="star-orbit">별에서의 거리 · 얼음 범위 <output class="val" id="star-orbit-value" for="star-orbit">100</output></label>
+
+       <input id="star-orbit" type="range" min="0" max="100" step="1" value="100">
       </div>
-      <p id="status" role="status">텍스처 로딩 중…</p>
-      <p class="note" id="scene-note">5주차 장면 구성을 바탕으로 행성에 PBR 재질과 normal map을 적용했습니다.</p>
-      <p class="sub">텍스처: Poly Haven · CC0</p>
+      <div class="ctl">
+        <label for="moon-orbit">작은 행성에서의 거리 · 조석 가열 <output class="val" id="moon-orbit-value" for="moon-orbit">50</output></label>
+
+        <input id="moon-orbit" type="range" min="0" max="100" step="1" value="50">
+      </div>
+      <p id="status" role="status" hidden></p>
     </aside>
   </div>
   <script src="demo.js"></script>

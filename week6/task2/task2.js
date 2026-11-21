@@ -150,21 +150,33 @@ const rock = 'rock_boulder_dry';
 });
 
 Promise.all(Object.values(textures).filter(value => value instanceof Promise)).then(() => {
- document.querySelector('#status').textContent = failed
-  ? '텍스처를 불러오지 못했습니다. HTTP 서버와 assets/week06 경로를 확인해 주세요.'
-  : '암석 표면 텍스처와 normal map을 적용했습니다.';
+ if (failed) {
+  const status=document.querySelector('#status');
+  status.textContent='텍스처를 불러오지 못했습니다. HTTP 서버와 assets/week06 경로를 확인해 주세요.';
+  status.hidden=false;
+ }
 });
 
 const cam = D.orbit(cv,{dist:11,yaw:.6,pitch:.35,min:3,max:20});
 const view=D.M4.create(),proj=D.M4.create(),vp=D.M4.create();
 const model=D.M4.create();
-const fixedSunPosition=[-1.65,.1,1.4];
-const targets={
- option1:[.1,0,0],
- option2:[0,1,0]
-};
-let scene='option2';
-const status=document.querySelector('#status');
+const target=[0,1,0];
+const starOrbit=document.querySelector('#star-orbit');
+const moonOrbit=document.querySelector('#moon-orbit');
+const starDistance={min:1.18,max:5};
+const moonDistance={min:1.47,max:4.13};
+let starAngle,moonAngle;
+[starOrbit,moonOrbit].forEach(input=>{
+ const value=document.querySelector('#'+input.id+'-value');
+ const updateValue=()=>{ value.textContent=input.value; };
+ input.addEventListener('input',updateValue);
+ updateValue();
+});
+
+function orbitRadius(input,distance) {
+ const fraction=(Number(input.value)-Number(input.min))/(Number(input.max)-Number(input.min));
+ return distance.min+fraction*(distance.max-distance.min);
+}
 
 function bindTexture(texture,unit,uniform) {
  gl.activeTexture(gl.TEXTURE0+unit);
@@ -203,92 +215,43 @@ function drawSun(position,radius,tint) {
  draw(sphere,transform,{tint,emissive:true});
 }
 
-function renderOption1(time) {
- const sunPosition=fixedSunPosition;
- gl.uniform3fv(U.uLight,sunPosition);
- gl.uniform3f(U.uLightColor,1.0,.76,.53);
- gl.uniform1f(U.uPower,4.0);
- gl.uniform1f(U.uAmbient,.075);
- gl.uniform1f(U.uEnvPower,.48);
- drawPlanet([.55,0,0],1.12,[.78,.82,.86],time);
- drawSun(sunPosition,.36,[1.0,.3,.025]);
-}
+function renderScene(time,dt) {
+ const starRadius=orbitRadius(starOrbit,starDistance);
+ const moonRadius=orbitRadius(moonOrbit,moonDistance);
 
-function renderOption2(time) {
- const lightPosition=[Math.cos(time*.4)*5.0,3.6,Math.sin(time*.4)*5.0];
+ if (starAngle === undefined) {
+  starAngle=time*.4;
+  moonAngle=time*.9;
+ } else {
+  starAngle=(starAngle+dt*.4*starDistance.max/starRadius)%(2*Math.PI);
+  moonAngle=(moonAngle+dt*.9*moonDistance.max/moonRadius)%(2*Math.PI);
+ }
+ // Preserve the original height at radius 5 while approaching the central planet.
+ const lightPosition=[Math.cos(starAngle)*starRadius,1.6+starRadius*.4,Math.sin(starAngle)*starRadius];
  gl.uniform3fv(U.uLight,lightPosition);
  gl.uniform3f(U.uLightColor,1.0,.78,.2);
  gl.uniform1f(U.uPower,3.5);
  gl.uniform1f(U.uAmbient,.095);
  gl.uniform1f(U.uEnvPower,.35);
 
- /* D.M4.identity(model);
- draw(floor,model,{tint:[.055,.065,.09],rough:.94,metal:0});
-
- drawPlanet([0,1.6,0],1.0,[.82,.36,.22],time);
-
- const moonAngle=time*.9;
- const moonPosition=[Math.cos(moonAngle)*2.8,1.6,Math.sin(moonAngle)*2.8];
- drawPlanet(moonPosition,.42,[.85,.15,.15],time,moonAngle);
-
- // drawPlanet([4.2,1.6,3.4],.39,[1.0,.65,.75],time);
- // drawPlanet([-2.3,1.6,-2.5],1.3,[.4,.56,.64],time);
- drawSun(lightPosition,.22,[1.0,.82,.35]);
- 
- //바닥에 붙어있던 행성들 삭제
- */
-
  D.M4.identity(model);
  draw(floor,model,{tint:[.055,.065,.09],rough:.94,metal:0});
 
- // 중앙 갈색 행성 (유지)
  drawPlanet([0,1.6,0],1.0,[.82,.36,.22],time);
 
- // 오른쪽 작은 붉은 행성 (유지)
- const moonAngle=time*.9;
- const moonPosition=[Math.cos(moonAngle)*2.8,1.6,Math.sin(moonAngle)*2.8];
+ const moonPosition=[Math.cos(moonAngle)*moonRadius,1.6,Math.sin(moonAngle)*moonRadius];
  drawPlanet(moonPosition,.42,[.85,.15,.15],time,moonAngle);
 
- // 태양 (유지)
  drawSun(lightPosition,.22,[1.0,.82,.35]);
 }
 
-document.querySelectorAll('[data-scene]').forEach(button=>{
- button.addEventListener('click',()=>{
-  scene=button.dataset.scene;
-  document.querySelectorAll('[data-scene]').forEach(option=>{
-   option.setAttribute('aria-pressed',String(option===button));
-  });
-  const isWeek5=scene==='option2';
-  cv.setAttribute('aria-label',isWeek5
-   ? '바닥과 여러 행성, 공전하는 별이 있는 장면'
-   : '태양빛을 받는 암석 행성');
-  document.querySelector('#scene-label').textContent=isWeek5
-   ? '5주차 장면 구성 · 공전하는 별과 행성들'
-   : '별빛을 받는 암석 행성';
-  document.querySelector('#scene-title').textContent=isWeek5
-   ? '5주차 장면에서 출발'
-   : '태양과 관찰 행성';
-  document.querySelector('#scene-description').textContent=isWeek5
-   ? '바닥, 중앙 행성, 공전하는 달과 주변 행성, 이동하는 발광별을 배치했습니다.'
-   : '별빛을 받는 암석 행성입니다. 드래그로 시점을 돌리고 휠로 확대해 보세요.';
-  document.querySelector('#scene-note').textContent=isWeek5
-   ? '5주차 장면 구성을 바탕으로 행성에 PBR 재질과 normal map을 적용했습니다.'
-   : '행성 표면에는 암석 텍스처와 PBR 조명, normal map을 적용했습니다.';
-  cam.dist=isWeek5?11:5.7;
-  cam.yaw=isWeek5?.6:.03;
-  cam.pitch=isWeek5?.35:.12;
- });
-});
-
 gl.enable(gl.DEPTH_TEST);
-D.loop(time => {
+D.loop((time,dt) => {
  D.fit(cv);
  gl.viewport(0,0,cv.width,cv.height);
  gl.clearColor(.012,.018,.032,1);
  gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
 
- const target=targets[scene];
  const eye=cam.eye(target);
  D.M4.lookAt(view,eye,target,[0,1,0]);
  D.M4.perspective(proj,Math.PI/4,cv.width/cv.height,.1,100);
@@ -301,8 +264,7 @@ D.loop(time => {
  bindTexture(textures.normal,1,'uNormal');
  bindTexture(textures.arm,2,'uARM');
  bindTexture(textures.env,3,'uEnv');
- if(scene==='option2')renderOption2(time);
- else renderOption1(time);
+ renderScene(time,dt);
  gl.bindVertexArray(null);
 });
 })();
