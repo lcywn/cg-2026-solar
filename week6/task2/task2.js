@@ -12,11 +12,15 @@ layout(location=2) in vec2 aUV;
 uniform mat4 uVP,uModel;
 out vec3 vP,vN;
 out vec2 vUV;
+out vec3 vLocal;
+
+
 void main(){
  vec4 world=uModel*vec4(aPos,1.0);
  vP=world.xyz;
  vN=mat3(uModel)*aNormal;
  vUV=aUV;
+ vLocal=aPos;
  gl_Position=uVP*world;
 }`;
 
@@ -25,11 +29,16 @@ precision highp float;
 const float PI=3.14159265;
 in vec3 vP,vN;
 in vec2 vUV;
+in vec3 vLocal;
+
 out vec4 outColor;
 uniform sampler2D uColor,uNormal,uARM,uEnv;
 uniform vec3 uEye,uLight,uLightColor,uTint;
 uniform float uRough,uMetal,uNormalStrength,uPower,uAmbient,uEnvPower;
 uniform bool uEmissive,uUseMaps;
+uniform bool uIsIcePlanet; //중앙행성이면 t, 아니면 f... 얼음행성 색변경용
+uniform float uStarDistance;
+uniform bool uChocolateMaskView;
 
 vec3 srgbToLinear(vec3 c){
  return mix(c/12.92,pow((c+.055)/1.055,vec3(2.4)),step(vec3(.04045),c));
@@ -62,11 +71,43 @@ void main(){
  vec3 base=uTint;
  float ao=1.0,rough=uRough,metal=uMetal;
  if(uUseMaps){
-  base=srgbToLinear(texture(uColor,vUV).rgb)*uTint;
+  vec3 textureColor=srgbToLinear(texture(uColor,vUV).rgb);
+  base=uIsIcePlanet
+   ? vec3(dot(textureColor,vec3(.2126,.7152,.0722)))*uTint
+   : textureColor*uTint;
+
   vec3 arm=texture(uARM,vUV).rgb;
   ao=arm.r;
   rough=max(arm.g*uRough,.045);
   metal=arm.b*uMetal;
+ }
+   // 중앙 우유얼음 행성에만 초콜릿 코팅 적용
+ if(uIsIcePlanet){
+
+  // 극지방일수록 1, 적도일수록 0
+  float latitude=abs(normalize(vLocal).y);
+
+  // 초콜릿 경계를 불규칙하게 만들기
+  float noise=sin(vLocal.x*12.0)*sin(vLocal.z*15.0)*0.08;
+
+  // 태양에서 멀어질수록 초콜릿 코팅 확대
+  float boundary=mix(1.15,-0.28,uStarDistance);
+
+  float chocolateMask=smoothstep(
+   boundary-0.06,
+   boundary+0.06,
+   latitude+noise
+  );
+
+  // 흑백 마스크 진단
+  if(uChocolateMaskView){
+   outColor=vec4(vec3(chocolateMask),1.0);
+   return;
+  }
+
+  // 색상과 roughness 변화
+  base=mix(base,vec3(0.16,0.055,0.025),chocolateMask);
+  rough=mix(rough,0.22,chocolateMask);
  }
 
  if(uUseMaps&&uNormalStrength>0.0){
@@ -103,7 +144,10 @@ const prog = D.program(gl, VS, FS);
 const U = D.uniforms(gl, prog, [
  'uVP','uModel','uEye','uLight','uLightColor','uTint',
  'uRough','uMetal','uNormalStrength','uPower','uAmbient','uEnvPower',
- 'uEmissive','uUseMaps','uColor','uNormal','uARM','uEnv'
+// 'uEmissive','uUseMaps','uIsIcePlanet','uColor','uNormal','uARM','uEnv'
+ 'uEmissive','uUseMaps','uIsIcePlanet',
+ 'uStarDistance','uChocolateMaskView',
+ 'uColor','uNormal','uARM','uEnv'
 ]);
 const sphere = D.upload(gl, D.revolution(D.profiles.sphere(1, 48), 96));
 const floor = D.upload(gl,{
@@ -185,11 +229,12 @@ function bindTexture(texture,unit,uniform) {
 }
 
 function draw(mesh,transform,options) {
- const {tint,emissive=false,useMaps=false,rough=.8,metal=.08,normalStrength=0}=options;
+ const {tint,emissive=false,useMaps=false,isIcePlanet=false,rough=.8,metal=.08,normalStrength=0}=options;
  gl.uniformMatrix4fv(U.uModel,false,transform);
  gl.uniform3fv(U.uTint,tint);
  gl.uniform1i(U.uEmissive,emissive?1:0);
  gl.uniform1i(U.uUseMaps,useMaps?1:0);
+ gl.uniform1i(U.uIsIcePlanet,isIcePlanet?1:0);
  gl.uniform1f(U.uRough,rough);
  gl.uniform1f(U.uMetal,metal);
  gl.uniform1f(U.uNormalStrength,normalStrength);
@@ -205,9 +250,9 @@ function setTransform(position,scale,rotation) {
  return model;
 }
 
-function drawPlanet(position,scale,tint,time,rotationOffset=0) {
+function drawPlanet(position,scale,tint,time,rotationOffset=0,isIcePlanet=false) {
  const transform=setTransform(position,scale,time*.12+rotationOffset);
- draw(sphere,transform,{tint,useMaps:true,rough:.82,metal:.08,normalStrength:1.35});
+ draw(sphere,transform,{tint,useMaps:true,isIcePlanet,rough:.82,metal:.08,normalStrength:1.35});
 }
 
 function drawSun(position,radius,tint) {
@@ -218,6 +263,9 @@ function drawSun(position,radius,tint) {
 function renderScene(time,dt) {
  const starRadius=orbitRadius(starOrbit,starDistance);
  const moonRadius=orbitRadius(moonOrbit,moonDistance);
+ const starAmount=Number(starOrbit.value)/100;
+ gl.uniform1f(U.uStarDistance,starAmount);
+ gl.uniform1i(U.uChocolateMaskView,0);
 
  if (starAngle === undefined) {
   starAngle=time*.4;
@@ -237,7 +285,7 @@ function renderScene(time,dt) {
  D.M4.identity(model);
  draw(floor,model,{tint:[.055,.065,.09],rough:.94,metal:0});
 
- drawPlanet([0,1.6,0],1.0,[.82,.36,.22],time);
+ drawPlanet([0,1.6,0],1.0,[1,1,1],time,0,true);
 
  const moonPosition=[Math.cos(moonAngle)*moonRadius,1.6,Math.sin(moonAngle)*moonRadius];
  drawPlanet(moonPosition,.42,[.85,.15,.15],time,moonAngle);
