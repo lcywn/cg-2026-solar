@@ -39,6 +39,10 @@ uniform bool uEmissive,uUseMaps;
 uniform bool uIsIcePlanet; //중앙행성이면 t, 아니면 f... 얼음행성 색변경용
 uniform float uStarDistance;
 uniform bool uChocolateMaskView;
+uniform float uEruption;       // 카다이프 분출 강도
+uniform float uTime;           // 애니메이션 시간
+uniform float uFlowReach;      // 현재 줄기가 뻗은 길이
+uniform bool uKataifiMaskView; // 흑백 마스크 보기
 
 vec3 srgbToLinear(vec3 c){
  return mix(c/12.92,pow((c+.055)/1.055,vec3(2.4)),step(vec3(.04045),c));
@@ -110,6 +114,119 @@ void main(){
   rough=mix(rough,0.22,chocolateMask);
  }
 
+
+ // ===== 카다이프 화산 =====
+ if(uIsIcePlanet){
+
+  vec3 pos=normalize(vLocal);
+  vec3 center=normalize(vec3(0.0,0.5,0.866));
+
+  vec3 right=normalize(cross(vec3(0,1,0),center));
+  vec3 up=normalize(cross(center,right));
+
+  // 분화구에서 얼마나 떨어졌는지
+  float r=acos(clamp(dot(pos,center),-1.0,1.0));
+  float angle=atan(dot(pos,up),dot(pos,right));
+
+  // 각도에 따라 가장자리를 불규칙하게 만들어 둥근 화구에 뾰족한 암석을 더한다.
+  float craterRadius=0.095
+      +0.012*sin(angle*5.0+0.4)
+      +0.009*sin(angle*9.0-0.8)
+      +0.018*pow(abs(sin(angle*6.0+0.3)),3.0);
+  float craterInterior=1.0-smoothstep(craterRadius-0.008,craterRadius+0.006,r);
+  float craterOuter=1.0-smoothstep(craterRadius+0.035,craterRadius+0.055,r);
+  float craterRim=craterOuter*(1.0-craterInterior);
+
+  // 2. 굵고 구불구불한 분출 영역
+  // 방향에 따라 흐름이 불규칙하게 휘어지도록 계산
+  float curve=
+      0.23*sin(angle*3.0+r*3.5)
+     +0.14*sin(angle*2.0-r*5.0+1.3)
+     +0.08*sin(angle*5.0+r*2.0);
+
+  // 작은 표면 굴곡
+  float noise=
+      sin(pos.x*17.0+pos.z*11.0)
+     *sin(pos.y*21.0-pos.x*13.0)*0.045;
+
+  // 3. 분화구에서 바깥으로 차오르는 경계
+  float speed=2.0+uEruption*8.0;
+
+  // 새 분출물이 바깥으로 밀려나는 울컥거림
+  float pulse=0.04*uEruption*
+      sin(r*16.0-uTime*speed);
+
+  float front=max(0.0,
+      uFlowReach*(0.75+curve)
+      +noise*uEruption
+      +pulse
+  );
+
+  // 경계 안쪽을 전부 초록색으로 채움
+  float flowMask=1.0-smoothstep(
+      front-0.07,
+      front+0.04,
+      r
+  );
+
+  // 4. 퍼진 영역 사이에 원래 표면이 조금 남도록
+  float patches=
+      sin(pos.x*11.0+pos.y*6.0)
+     *sin(pos.z*13.0-pos.y*8.0);
+
+  float gaps=smoothstep(-0.8,-0.25,patches);
+
+  // 분화구 근처는 연결, 바깥쪽은 불규칙하게
+  float outer=smoothstep(0.18,0.55,r);
+
+  flowMask*=mix(1.0,0.35+0.65*gaps,outer*0.65);
+  flowMask*=uEruption;
+  //flowMask *= step(0.001, uFlowReach);
+
+  // 5. 피스타치오 초록색
+  vec3 green=srgbToLinear(vec3(0.32,0.52,0.17));
+  vec3 gold=srgbToLinear(vec3(0.92,0.72,0.32));
+
+  // 6. 작은 카다이프 조각 (짧은 세로선)
+  vec2 p=vec2(dot(pos,right),dot(pos,up))*55.0;
+  vec2 cell=floor(p);
+  vec2 f=fract(p);
+
+  float random=fract(sin(
+      dot(cell,vec2(127.1,311.7))
+  )*43758.5453);
+
+  // 드문드문 황금색 조각 배치
+  float particle=
+      step(0.93,random)
+     *(1.0-smoothstep(0.06,0.11,abs(f.x-0.5)))
+     *(1.0-smoothstep(0.23,0.32,abs(f.y-0.5)));
+
+  vec3 kataifiColor=mix(green,gold,particle);
+
+  // 7. 흑백 마스크 진단
+  if(uKataifiMaskView){
+    outColor=vec4(vec3(flowMask),1.0);
+    return;
+  }
+
+  // 8. 카다이프 PBR 재질 적용
+  base=mix(base,kataifiColor,flowMask);
+  rough=mix(rough,0.85,flowMask);
+
+  // 기존 암석 텍스처의 명암을 갈색 화구 테두리에도 유지한다.
+  vec3 rockColor=srgbToLinear(texture(uColor,vUV).rgb);
+  float rockDetail=dot(rockColor,vec3(.2126,.7152,.0722));
+  vec3 rimColor=vec3(0.20,0.075,0.032)*(0.65+0.7*rockDetail);
+  float innerDepth=1.0-smoothstep(0.0,craterRadius,r);
+  vec3 innerColor=mix(vec3(0.035,0.012,0.005),vec3(0.008,0.003,0.002),innerDepth);
+  base=mix(base,rimColor,craterRim);
+  base=mix(base,innerColor,craterInterior);
+  rough=mix(rough,0.9,craterOuter);
+ }
+
+
+
  if(uUseMaps&&uNormalStrength>0.0){
   vec3 dp1=dFdx(vP),dp2=dFdy(vP);
   vec2 du1=dFdx(vUV),du2=dFdy(vUV);
@@ -147,6 +264,7 @@ const U = D.uniforms(gl, prog, [
 // 'uEmissive','uUseMaps','uIsIcePlanet','uColor','uNormal','uARM','uEnv'
  'uEmissive','uUseMaps','uIsIcePlanet',
  'uStarDistance','uChocolateMaskView',
+ 'uEruption','uTime','uFlowReach','uKataifiMaskView',
  'uColor','uNormal','uARM','uEnv'
 ]);
 const sphere = D.upload(gl, D.revolution(D.profiles.sphere(1, 48), 96));
@@ -210,6 +328,7 @@ const moonOrbit=document.querySelector('#moon-orbit');
 const starDistance={min:1.18,max:5};
 const moonDistance={min:1.47,max:4.13};
 let starAngle,moonAngle;
+let flowReach=0;
 [starOrbit,moonOrbit].forEach(input=>{
  const value=document.querySelector('#'+input.id+'-value');
  const updateValue=()=>{ value.textContent=input.value; };
@@ -261,11 +380,43 @@ function drawSun(position,radius,tint) {
 }
 
 function renderScene(time,dt) {
+ /*
  const starRadius=orbitRadius(starOrbit,starDistance);
  const moonRadius=orbitRadius(moonOrbit,moonDistance);
  const starAmount=Number(starOrbit.value)/100;
  gl.uniform1f(U.uStarDistance,starAmount);
  gl.uniform1i(U.uChocolateMaskView,0);
+ */
+const starRadius=orbitRadius(starOrbit,starDistance);
+const moonRadius=orbitRadius(moonOrbit,moonDistance);
+
+const starAmount=Number(starOrbit.value)/100;
+
+// 작은 행성이 가까울수록 분출 증가
+const eruption=1.0-Number(moonOrbit.value)/100;
+
+// 목표 길이까지 서서히 성장하거나 줄어듦
+/*const targetReach=0.8*eruption;
+const delta=Math.max(0,Math.min(dt,0.05));
+
+flowReach+=(targetReach-flowReach)
+           *Math.min(1,delta*(0.25+eruption*0.8)); */
+
+const targetReach=1.65*eruption;
+const delta=Math.max(0,Math.min(dt,0.05));
+
+flowReach+=(targetReach-flowReach)
+           *Math.min(1,delta*(0.8+eruption*1.6));
+
+// 셰이더에 값 전달
+gl.uniform1f(U.uStarDistance,starAmount);
+gl.uniform1f(U.uEruption,eruption);
+gl.uniform1f(U.uTime,time);
+gl.uniform1f(U.uFlowReach,flowReach);
+
+// 진단 화면 설정
+gl.uniform1i(U.uChocolateMaskView,0);
+gl.uniform1i(U.uKataifiMaskView,0);
 
  if (starAngle === undefined) {
   starAngle=time*.4;
