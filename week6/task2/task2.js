@@ -222,7 +222,7 @@ function renderOption2(time) {
  gl.uniform1f(U.uAmbient,.095);
  gl.uniform1f(U.uEnvPower,.35);
 
- D.M4.identity(model);
+ /* D.M4.identity(model);
  draw(floor,model,{tint:[.055,.065,.09],rough:.94,metal:0});
 
  drawPlanet([0,1.6,0],1.0,[.82,.36,.22],time);
@@ -231,8 +231,25 @@ function renderOption2(time) {
  const moonPosition=[Math.cos(moonAngle)*2.8,1.6,Math.sin(moonAngle)*2.8];
  drawPlanet(moonPosition,.42,[.85,.15,.15],time,moonAngle);
 
- drawPlanet([4.2,1.6,3.4],.39,[1.0,.65,.75],time);
- drawPlanet([-2.3,1.6,-2.5],1.3,[.4,.56,.64],time);
+ // drawPlanet([4.2,1.6,3.4],.39,[1.0,.65,.75],time);
+ // drawPlanet([-2.3,1.6,-2.5],1.3,[.4,.56,.64],time);
+ drawSun(lightPosition,.22,[1.0,.82,.35]);
+ 
+ //바닥에 붙어있던 행성들 삭제
+ */
+
+ D.M4.identity(model);
+ draw(floor,model,{tint:[.055,.065,.09],rough:.94,metal:0});
+
+ // 중앙 갈색 행성 (유지)
+ drawPlanet([0,1.6,0],1.0,[.82,.36,.22],time);
+
+ // 오른쪽 작은 붉은 행성 (유지)
+ const moonAngle=time*.9;
+ const moonPosition=[Math.cos(moonAngle)*2.8,1.6,Math.sin(moonAngle)*2.8];
+ drawPlanet(moonPosition,.42,[.85,.15,.15],time,moonAngle);
+
+ // 태양 (유지)
  drawSun(lightPosition,.22,[1.0,.82,.35]);
 }
 
