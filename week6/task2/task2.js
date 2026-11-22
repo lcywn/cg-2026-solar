@@ -80,6 +80,30 @@ void main(){
   base=uIsIcePlanet
    ? vec3(dot(textureColor,vec3(.2126,.7152,.0722)))*uTint
    : textureColor*uTint;
+   // 작은 공전 행성: 바닐라 아이스크림
+if(!uIsIcePlanet && uUseMaps){
+
+    vec3 p=normalize(vLocal);
+
+    // 아이스크림 표면의 부드러운 얼룩과 요철
+    float grain=
+        0.5+0.5*sin(p.x*29.0+p.z*14.0)
+               *sin(p.y*33.0-p.x*11.0);
+
+    float folds=
+        0.5+0.5*sin(p.y*17.0+
+                    2.5*sin(p.x*12.0+p.z*9.0));
+
+    // 크림색 바탕
+    vec3 vanilla=srgbToLinear(vec3(1.0,0.95,0.84));
+
+    // 자연스러운 명암 얼룩
+    base=vanilla*(0.86+0.14*grain)*(0.92+0.08*folds);
+
+    // 거칠고 무광인 아이스크림
+    rough=0.92;
+    metal=0.0;
+}
 
   vec3 arm=texture(uARM,vUV).rgb;
   ao=arm.r;
@@ -399,9 +423,22 @@ function setTransform(position,scale,rotation) {
  return model;
 }
 
-function drawPlanet(position,scale,tint,time,rotationOffset=0,isIcePlanet=false) {
+/*function drawPlanet(position,scale,tint,time,rotationOffset=0,isIcePlanet=false) {
  const transform=setTransform(position,scale,time*.12+rotationOffset);
  draw(sphere,transform,{tint,useMaps:true,isIcePlanet,rough:.82,metal:.08,normalStrength:1.35});
+} //
+ */
+function drawPlanet(position,scale,tint,time,rotationOffset=0,isIcePlanet=false) {
+ const transform=setTransform(position,scale,time*.12+rotationOffset);
+
+ draw(sphere,transform,{
+   tint,
+   useMaps:true,
+   isIcePlanet,
+   rough:.82,
+   metal:.08,
+   normalStrength:isIcePlanet ? 1.35 : 0.25
+ });
 }
 
 function drawSun(position,radius,tint) {
@@ -470,8 +507,8 @@ gl.uniform1i(U.uSurfaceChanges,surfaceChanges?1:0);
  drawPlanet([0,1.6,0],1.0,[1,1,1],time,0,true);
 
  const moonPosition=[Math.cos(moonAngle)*moonRadius,1.6,Math.sin(moonAngle)*moonRadius];
- drawPlanet(moonPosition,.42,[.85,.15,.15],time,moonAngle);
-
+ //drawPlanet(moonPosition,.42,[.85,.15,.15],time,moonAngle);
+ drawPlanet(moonPosition,.42,[1.0,0.94,0.82],time,moonAngle); //공전행성에 암석재질 곱해서 회색으로 만들기 
  drawSun(lightPosition,.22,[1.0,.82,.35]);
 }
 
