@@ -206,9 +206,13 @@ if(!uIsIcePlanet && uUseMaps){
   // 분화구 근처는 연결, 바깥쪽은 불규칙하게
   float outer=smoothstep(0.18,0.55,r);
 
-  flowMask*=mix(1.0,0.35+0.65*gaps,outer*0.65);
-  flowMask*=uEruption;
-  //flowMask *= step(0.001, uFlowReach);
+  // flowMask*=mix(1.0,0.35+0.65*gaps,outer*0.65); // 카다이프 영역 바깥쪽의 불규칙한 얼룩 만듦
+
+  //  작은 행성이 가까워질수록 uEruption 값이 커지고 이 값을 flowmask에 곱하기에 카다이프 색이 변함 
+
+  //flowMask=flowMask*uEruption; //이거는 카다이프 투명도 조절
+  
+  flowMask *= step(0.001, uFlowReach);
 
   // 5. 피스타치오 초록색
   vec3 green=srgbToLinear(vec3(0.32,0.52,0.17));
@@ -237,10 +241,16 @@ if(!uIsIcePlanet && uUseMaps){
     return;
   }
 
-  if(uSurfaceChanges){
+ if(uSurfaceChanges){
   // 8. 카다이프 PBR 재질 적용
+
+   // flowMask가 0이면 기존 표면색
+   // flowMask가 1이면 피스타치오 색상
+    // 0과 1 사이면 두 색상을 혼합
+    // 따라서 uEruption이 커지면 초록색이 더 강하게 나타남
   base=mix(base,kataifiColor,flowMask);
   rough=mix(rough,0.85,flowMask);
+  
 
   // 기존 암석 텍스처의 명암을 갈색 화구 테두리에도 유지한다.
   vec3 rockColor=srgbToLinear(texture(uColor,vUV).rgb);
