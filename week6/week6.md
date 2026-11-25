@@ -16,7 +16,7 @@
 
 사이트에 올라온 코드만으로는 normal의 변화를 감지하기 힘들어 코드를 다음과 같이 바꿨습니다. 
 
-```json
+```js
 float inv=inversesqrt(max(max(dot(T,T),dot(B,B)),1e-20));
 ```
 1e-8라는 값을 줄여 접선의 방향의 축소를 줄여 normal 변화를 증폭시켰습니다.
@@ -84,7 +84,7 @@ Task2
 아이스크림이 가까워질수록 eruption이 계산됩니다. 이를 이용해 카다이프 화산의 분출 범위인 uFlowReach를 변화시켰습니다. 프래그먼트 셰이더에서는 분화구 중심으로부터의 거리(r)와 방향(angle), 분출 범위와 시간을 이용해 flowMask를 계산했습니다. 이후 이것을 Base Color와 Roughness에 적용해 화산 분출을 구현했습니다. 
 
 
-```json
+```js
 //—————아이스크림 행성의 거리에 따른 화산 분출 값 설정—————
 const eruption=1.0-Number(moonOrbit.value)/100;
 const targetReach=1.65*eruption;
