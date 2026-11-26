@@ -66,11 +66,11 @@ metalic은 거칠기를 결정하는 요소입니다. 금속성을 추가해 반
 
 다음에 해당합니다. 
 ```js
-float D = a2 / max(PI*den*den, 1e-6); //D: 미세면 법선 분포(하이라이트의 퍼짐)
+float D = a2 / max(PI*den*den, 1e-6); //D: 미세면 법선 분포 - 하이라이트의 퍼짐을 계산
  float k = (rough+1.0)*(rough+1.0)/8.0;
- float G = (nl/(nl*(1.0-k)+k)) * (nv/(nv*(1.0-k)+k)); //G: 미세면 가림
+ float G = (nl/(nl*(1.0-k)+k)) * (nv/(nv*(1.0-k)+k)); //G: 미세면 가림 -  주변 미세면에 의해 빛이 가려지는 정도 계산
  vec3 F0 = mix(vec3(0.04), base, metal);
- vec3 F = F0 + (1.0-F0)*pow(1.0-vh,5.0); //F: Fresnel 반사율
+ vec3 F = F0 + (1.0-F0)*pow(1.0-vh,5.0); //F: Fresnel 반사율 - 들어온 빛 중 얼마만큼 정반사되는지 계산
 ```
 
 
